@@ -962,31 +962,42 @@
 
         // ==================== MI REGISTRO DE HOY ====================
         async function cargarMiRegistro() {
-            const contenedor = document.getElementById('mi-registro-hoy');
-            contenedor.innerHTML = '<p class="loading">Cargando...</p>';
-            try {
-                const data = await llamarAppsScript({ accion: 'listar_asistencias' });
-                if (data.exito && data.registros) {
-                    const hoy = new Date().toLocaleDateString('es-VE');
-                    const miRegistro = data.registros.find(r => r.usuario === usuarioActual && r.fechaEntrada === hoy);
-                    if (miRegistro) {
-                        let html = '<table><tbody>';
-                        html += `<tr><td><strong>Entrada:</strong></td><td>${miRegistro.horaEntrada || 'Pendiente'}</td></tr>`;
-                        html += `<tr><td><strong>Comida In:</strong></td><td>${miRegistro.horaIniRef || 'Pendiente'}</td></tr>`;
-                        html += `<tr><td><strong>Comida Out:</strong></td><td>${miRegistro.horaFinRef || 'Pendiente'}</td></tr>`;
-                        html += `<tr><td><strong>Salida:</strong></td><td>${miRegistro.horaSalida || 'Pendiente'}</td></tr>`;
-                        html += `<tr><td><strong>T. Productivo:</strong></td><td>${miRegistro.tiempoProductivo || '-'}</td></tr>`;
-                        html += `<tr><td><strong>T. Total:</strong></td><td>${miRegistro.tiempoTotal || '-'}</td></tr>`;
-                        html += '</tbody></table>';
-                        contenedor.innerHTML = html;
-                    } else {
-                        contenedor.innerHTML = '<p class="loading">No has registrado entrada hoy</p>';
-                    }
-                }
-            } catch (error) {
-                contenedor.innerHTML = '<p class="error">Error al cargar</p>';
+    const contenedor = document.getElementById('mi-registro-hoy');
+    contenedor.innerHTML = '<p class="loading">Cargando...</p>';
+    try {
+        const data = await llamarAppsScript({ accion: 'listar_asistencias' });
+        if (data.exito && data.registros) {
+            // Obtener fecha de hoy en formato dd/MM/yyyy (con ceros a la izquierda)
+            const hoy = new Date();
+            const dia = String(hoy.getDate()).padStart(2, '0');
+            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+            const anio = hoy.getFullYear();
+            const hoyFormateado = `${dia}/${mes}/${anio}`;
+            
+            console.log('Hoy formateado:', hoyFormateado);
+            
+            const miRegistro = data.registros.find(r => 
+                r.usuario === usuarioActual && r.fechaEntrada === hoyFormateado
+            );
+            
+            if (miRegistro) {
+                let html = '<table><tbody>';
+                html += `<tr><td><strong>Entrada:</strong></td><td>${miRegistro.horaEntrada || 'Pendiente'}</td></tr>`;
+                html += `<tr><td><strong>Comida In:</strong></td><td>${miRegistro.horaIniRef || 'Pendiente'}</td></tr>`;
+                html += `<tr><td><strong>Comida Out:</strong></td><td>${miRegistro.horaFinRef || 'Pendiente'}</td></tr>`;
+                html += `<tr><td><strong>Salida:</strong></td><td>${miRegistro.horaSalida || 'Pendiente'}</td></tr>`;
+                html += `<tr><td><strong>T. Productivo:</strong></td><td>${miRegistro.tiempoProductivo || '-'}</td></tr>`;
+                html += `<tr><td><strong>T. Total:</strong></td><td>${miRegistro.tiempoTotal || '-'}</td></tr>`;
+                html += '</tbody></table>';
+                contenedor.innerHTML = html;
+            } else {
+                contenedor.innerHTML = '<p class="loading">No has registrado entrada hoy</p>';
             }
         }
+    } catch (error) {
+        contenedor.innerHTML = '<p class="error">Error al cargar</p>';
+    }
+}
 
         // ==================== CERRAR SESIÓN ====================
         function cerrarSesion() {
