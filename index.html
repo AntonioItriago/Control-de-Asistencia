@@ -631,13 +631,16 @@
                     document.getElementById('pantalla-login').classList.remove('activa');
                     document.getElementById('main-container').classList.remove('login-container');
                     
-                    if (data.rol === 'admin') {
-                        document.getElementById('nombre-admin').innerText = data.nombre || user;
-                        document.getElementById('pantalla-admin').classList.add('activa');
-                    } else {
-                        document.getElementById('nombre-user').innerText = data.nombre || user;
-                        document.getElementById('pantalla-usuario').classList.add('activa');
-                    }
+                    if (data.rol === 'admin') {// Normalizar el rol a minúsculas para comparar sin importar cómo esté escrito
+const rolNormalizado = String(data.rol).toLowerCase().trim();
+
+if (rolNormalizado === 'admin' || rolNormalizado === 'administrador') {
+    document.getElementById('nombre-admin').innerText = data.nombre || user;
+    document.getElementById('pantalla-admin').classList.add('activa');
+} else {
+    document.getElementById('nombre-user').innerText = data.nombre || user;
+    document.getElementById('pantalla-usuario').classList.add('activa');
+}
                 } else {
                     msg.innerText = data.mensaje || 'Error de Acceso';
                 }
