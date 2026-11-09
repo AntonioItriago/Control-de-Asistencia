@@ -76,31 +76,17 @@
         #video { width: 100%; max-width: 400px; border-radius: 8px; }
         #canvas { display: none; }
         #foto-preview { width: 100%; max-width: 400px; border-radius: 8px; margin-top: 10px; }
-        /* Por defecto, todo visible */
-.vista-solo-movil { display: block; }
-.vista-oculta-movil { display: block; }
 
-/* En Tablet y PC: ocultar lo exclusivo de móvil */
-.vista-tablet .vista-solo-movil,
-.vista-pc .vista-solo-movil {
-    display: none !important;
-}
-
-/* En Móvil: ocultar lo exclusivo de escritorio */
-.vista-movil .vista-oculta-movil {
-    display: none !important;
-}
-
-/* Mostrar alerta en tablet/pc */
-.vista-tablet .alerta-dispositivo,
-.vista-pc .alerta-dispositivo {
-    display: block !important;
-}
-
-/* Ajuste de grid en móvil: solo 2 botones (Entrada/Salida) */
-.vista-movil .grid-4 {
-    grid-template-columns: 1fr 1fr;
-}
+        /* Control por dispositivo */
+        .vista-solo-movil { display: block; }
+        .vista-oculta-movil { display: block; }
+        .vista-tablet .vista-solo-movil,
+        .vista-pc .vista-solo-movil { display: none !important; }
+        .vista-movil .vista-oculta-movil { display: none !important; }
+        .alerta-dispositivo { display: none; background: #fff3cd; padding: 10px; border-radius: 6px; margin: 15px 0; font-size: 13px; color: #856404; text-align: center; }
+        .vista-tablet .alerta-dispositivo,
+        .vista-pc .alerta-dispositivo { display: block !important; }
+        .vista-movil .grid-4 { grid-template-columns: 1fr 1fr; }
     </style>
 </head>
 <body>
@@ -124,45 +110,28 @@
         </div>
 
         <!-- PANEL USUARIO -->
-<div id="pantalla-usuario" class="pantalla">
-    <h2>👤 Panel de Empleado</h2>
-    <div class="info-box">Bienvenido, <strong id="nombre-user"></strong></div>
-    
-    <button id="btn-instalar" class="btn-install" style="display: none;" onclick="instalarApp()">
-        📱 Instalar Aplicación en este dispositivo
-    </button>
-    
-    <div class="titulo-con-boton">
-        <h3>📍 Registrar Jornada</h3>
-        <button class="btn-cambiar-pass vista-oculta-movil" onclick="mostrarModalCambiarPass()">🔑 Cambiar Contraseña</button>
-    </div>
-    
-    <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 15px;">
-        GPS obligatorio para todos los registros. Cámara obligatoria para Entrada y Salida.
-    </p>
-    
-    <!-- Entrada y Salida: SOLO en móvil -->
-    <div class="grid-4">
-        <button class="btn-success vista-solo-movil" onclick="iniciarRegistro('entrada')">✅ Entrada</button>
-        <button class="btn-warning vista-oculta-movil" onclick="iniciarRegistro('comida-in')">🍽️ Comida In</button>
-        <button class="btn-info vista-oculta-movil" onclick="iniciarRegistro('comida-out')">☕ Comida Out</button>
-        <button class="btn-danger vista-solo-movil" onclick="iniciarRegistro('salida')">🚪 Salida</button>
-    </div>
-    
-    <!-- Mensaje para PC/Tablet que intente marcar -->
-    <div class="alerta-dispositivo vista-oculta-movil" style="background: #fff3cd; padding: 10px; border-radius: 6px; margin: 15px 0; font-size: 13px; color: #856404; text-align: center; display: none;">
-        ⚠️ Para registrar Entrada o Salida debes usar tu <strong>teléfono móvil</strong> (se requiere GPS y cámara).
-    </div>
-    
-    <h3 class="vista-oculta-movil">📊 Mi Registro de Hoy</h3>
-    <button class="vista-oculta-movil" onclick="cargarMiRegistro()">🔄 Ver mi registro de hoy</button>
-    <div id="mi-registro-hoy" class="vista-oculta-movil">
-        <p class="loading">Aún no has consultado tu registro</p>
-    </div>
-    
-    <button class="btn-secondary" onclick="cerrarSesion()" style="margin-top: 20px;">Cerrar Sesión</button>
-    <p id="msg-user" class="exito"></p>
-</div>
+        <div id="pantalla-usuario" class="pantalla">
+            <h2>👤 Panel de Empleado</h2>
+            <div class="info-box">Bienvenido, <strong id="nombre-user"></strong></div>
+            <button id="btn-instalar" class="btn-install" style="display: none;" onclick="instalarApp()">📱 Instalar Aplicación en este dispositivo</button>
+            <div class="titulo-con-boton">
+                <h3>📍 Registrar Jornada</h3>
+                <button class="btn-cambiar-pass vista-oculta-movil" onclick="mostrarModalCambiarPass()">🔑 Cambiar Contraseña</button>
+            </div>
+            <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 15px;">GPS obligatorio para todos los registros. Cámara obligatoria para Entrada y Salida.</p>
+            <div class="grid-4">
+                <button class="btn-success vista-solo-movil" onclick="iniciarRegistro('entrada')">✅ Entrada</button>
+                <button class="btn-warning vista-oculta-movil" onclick="iniciarRegistro('comida-in')">🍽️ Comida In</button>
+                <button class="btn-info vista-oculta-movil" onclick="iniciarRegistro('comida-out')">☕ Comida Out</button>
+                <button class="btn-danger vista-solo-movil" onclick="iniciarRegistro('salida')">🚪 Salida</button>
+            </div>
+            <div class="alerta-dispositivo">⚠️ Para registrar Entrada o Salida debes usar tu <strong>teléfono móvil</strong> (se requiere GPS y cámara).</div>
+            <h3 class="vista-oculta-movil">📊 Mi Registro de Hoy</h3>
+            <button class="vista-oculta-movil" onclick="cargarMiRegistro()">🔄 Ver mi registro de hoy</button>
+            <div id="mi-registro-hoy" class="vista-oculta-movil"><p class="loading">Aún no has consultado tu registro</p></div>
+            <button class="btn-secondary" onclick="cerrarSesion()" style="margin-top: 20px;">Cerrar Sesión</button>
+            <p id="msg-user" class="exito"></p>
+        </div>
 
         <!-- MODAL CAMBIAR CONTRASEÑA USUARIO -->
         <div id="modal-cambiar-pass" class="modal">
@@ -257,7 +226,6 @@
     </div>
 
     <script>
-        // ⚠️ REEMPLAZA CON TU URL REAL DE APPS SCRIPT
         const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbwg_8GJMiRL8YFvvF179O7areWnQtQCL209yIckoTzYaM4lmimbMr2nYlEo4VnW9Fc/exec";
 
         let usuarioActual = null;
@@ -269,31 +237,23 @@
         let coordenadasGPS = null;
 
         // ==================== DETECCIÓN DE DISPOSITIVO ====================
-function detectarDispositivo() {
-    const ua = navigator.userAgent.toLowerCase();
-    const esMovil = /android|iphone|ipod|mobile/i.test(ua);
-    const esTablet = /ipad|android(?!.*mobile)|tablet|kindle|silk/i.test(ua);
-    const esTactil = navigator.maxTouchPoints > 1;
-    const ancho = window.innerWidth;
-
-    if (esMovil && ancho < 768) return 'movil';
-    if (esTablet || (esTactil && ancho >= 768)) return 'tablet';
-    if (ancho >= 1024) return 'pc';
-    return 'movil'; // Por defecto, pantallas pequeñas = móvil
-}
-
-// Aplicar clases al cargar
-function aplicarVistaPorDispositivo() {
-    const dispositivo = detectarDispositivo();
-    const body = document.body;
-    body.classList.remove('vista-movil', 'vista-tablet', 'vista-pc');
-    body.classList.add('vista-' + dispositivo);
-    console.log('Dispositivo detectado:', dispositivo);
-}
-
-// Ejecutar al cargar y al redimensionar
-window.addEventListener('DOMContentLoaded', aplicarVistaPorDispositivo);
-window.addEventListener('resize', aplicarVistaPorDispositivo);
+        function detectarDispositivo() {
+            const ua = navigator.userAgent.toLowerCase();
+            const esMovil = /android|iphone|ipod|mobile/i.test(ua);
+            const esTablet = /ipad|android(?!.*mobile)|tablet|kindle|silk/i.test(ua);
+            const ancho = window.innerWidth;
+            if (esMovil && ancho < 768) return 'movil';
+            if (esTablet || ancho >= 768) return 'pc';
+            return 'movil';
+        }
+        function aplicarVistaPorDispositivo() {
+            const dispositivo = detectarDispositivo();
+            document.body.classList.remove('vista-movil', 'vista-tablet', 'vista-pc');
+            document.body.classList.add('vista-' + dispositivo);
+            console.log('Dispositivo detectado:', dispositivo);
+        }
+        window.addEventListener('DOMContentLoaded', aplicarVistaPorDispositivo);
+        window.addEventListener('resize', aplicarVistaPorDispositivo);
 
         // ==================== PWA ====================
         window.addEventListener('beforeinstallprompt', function(e) {
@@ -301,12 +261,8 @@ window.addEventListener('resize', aplicarVistaPorDispositivo);
             deferredPrompt = e;
             document.getElementById('btn-instalar').style.display = 'block';
         });
-
         async function instalarApp() {
-            if (!deferredPrompt) {
-                alert('La instalación no está disponible. Usa el menú del navegador (⋮ → Instalar aplicación)');
-                return;
-            }
+            if (!deferredPrompt) { alert('La instalación no está disponible.'); return; }
             deferredPrompt.prompt();
             await deferredPrompt.userChoice;
             deferredPrompt = null;
@@ -317,57 +273,42 @@ window.addEventListener('resize', aplicarVistaPorDispositivo);
         function togglePassword() {
             const inputPass = document.getElementById('password');
             const btnOjo = document.getElementById('btn-ojo');
-            if (inputPass.type === 'password') {
-                inputPass.type = 'text';
-                btnOjo.innerText = '🙈';
-            } else {
-                inputPass.type = 'password';
-                btnOjo.innerText = '👁️';
-            }
+            if (inputPass.type === 'password') { inputPass.type = 'text'; btnOjo.innerText = '🙈'; }
+            else { inputPass.type = 'password'; btnOjo.innerText = '👁️'; }
+        }
+        async function llamarAppsScript(datos) {
+            const respuesta = await fetch(URL_APPS_SCRIPT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(datos),
+                redirect: 'follow'
+            });
+            const texto = await respuesta.text();
+            return JSON.parse(texto);
         }
 
-        async function llamarAppsScript(datos) {
+        // ==================== FORMATEAR HORAS EN CLIENTE ====================
+        function formatearHoraCliente(valor) {
+            if (!valor || valor === '' || valor === '-') return '-';
+            if (/^\d{2}:\d{2}:\d{2}$/.test(valor)) return valor;
             try {
-                const respuesta = await fetch(URL_APPS_SCRIPT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(datos),
-                    redirect: 'follow'
-                });
-                const texto = await respuesta.text();
-                return JSON.parse(texto);
-            } catch (error) {
-                console.error("Error en fetch:", error);
-                throw error;
-            }
+                const fecha = new Date(valor);
+                if (isNaN(fecha.getTime())) return valor;
+                return String(fecha.getHours()).padStart(2, '0') + ':' + String(fecha.getMinutes()).padStart(2, '0') + ':' + String(fecha.getSeconds()).padStart(2, '0');
+            } catch (e) { return valor; }
         }
 
         // ==================== GPS ====================
         function obtenerGPS() {
             return new Promise(function(resolve, reject) {
-                if (!navigator.geolocation) {
-                    reject({ error: 'Geolocalización no soportada', bloqueante: true });
-                    return;
-                }
+                if (!navigator.geolocation) { reject({ error: 'Geolocalización no soportada', bloqueante: true }); return; }
                 navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        resolve({
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude,
-                            precision: position.coords.accuracy
-                        });
-                    },
+                    function(position) { resolve({ lat: position.coords.latitude, lng: position.coords.longitude, precision: position.coords.accuracy }); },
                     function(error) {
-                        let mensaje = '';
-                        if (error.code === error.PERMISSION_DENIED) {
-                            mensaje = '❌ Debes autorizar el GPS para registrar. Sin ubicación no se puede completar el registro.';
-                        } else if (error.code === error.POSITION_UNAVAILABLE) {
-                            mensaje = '⚠️ Ubicación no disponible. Activa el GPS.';
-                        } else if (error.code === error.TIMEOUT) {
-                            mensaje = '⏱️ Tiempo agotado para obtener ubicación.';
-                        } else {
-                            mensaje = '❌ Error al obtener ubicación.';
-                        }
+                        let mensaje = '❌ Error al obtener ubicación.';
+                        if (error.code === error.PERMISSION_DENIED) mensaje = '❌ Debes autorizar el GPS.';
+                        else if (error.code === error.POSITION_UNAVAILABLE) mensaje = '⚠️ Ubicación no disponible.';
+                        else if (error.code === error.TIMEOUT) mensaje = '⏱️ Tiempo agotado.';
                         reject({ error: mensaje, bloqueante: true });
                     },
                     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
@@ -387,17 +328,14 @@ window.addEventListener('resize', aplicarVistaPorDispositivo);
                 document.getElementById('foto-preview').style.display = 'none';
                 document.getElementById('video').style.display = 'block';
             } catch (error) {
-                throw { error: '❌ Debes autorizar la cámara para Entrada/Salida. Sin foto no se puede completar.', bloqueante: true };
+                throw { error: '❌ Debes autorizar la cámara.', bloqueante: true };
             }
         }
-
         function capturarFoto() {
             const video = document.getElementById('video');
             const canvas = document.getElementById('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
             fotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
             document.getElementById('foto-preview').src = fotoBase64;
             document.getElementById('foto-preview').style.display = 'block';
@@ -405,13 +343,7 @@ window.addEventListener('resize', aplicarVistaPorDispositivo);
             document.getElementById('btn-capturar').style.display = 'none';
             document.getElementById('btns-confirmar').style.display = 'flex';
         }
-
-        function cancelarFoto() {
-            detenerCamara();
-            document.getElementById('modal-camara').style.display = 'none';
-            fotoBase64 = null;
-        }
-
+        function cancelarFoto() { detenerCamara(); document.getElementById('modal-camara').style.display = 'none'; fotoBase64 = null; }
         function retomarFoto() {
             document.getElementById('foto-preview').style.display = 'none';
             document.getElementById('video').style.display = 'block';
@@ -419,73 +351,38 @@ window.addEventListener('resize', aplicarVistaPorDispositivo);
             document.getElementById('btns-confirmar').style.display = 'none';
             fotoBase64 = null;
         }
-
-        function confirmarFoto() {
-            detenerCamara();
-            document.getElementById('modal-camara').style.display = 'none';
-            procesarRegistroConDatos();
-        }
-
+        function confirmarFoto() { detenerCamara(); document.getElementById('modal-camara').style.display = 'none'; procesarRegistroConDatos(); }
         function detenerCamara() {
-            if (streamCamara) {
-                streamCamara.getTracks().forEach(function(track) { track.stop(); });
-                streamCamara = null;
-            }
+            if (streamCamara) { streamCamara.getTracks().forEach(function(t) { t.stop(); }); streamCamara = null; }
         }
 
-        // ==================== REGISTRO DE ASISTENCIA ====================
+        // ==================== REGISTRO ====================
         async function iniciarRegistro(tipo) {
-            tipoRegistroActual = tipo;
-            fotoBase64 = null;
-            coordenadasGPS = null;
+            tipoRegistroActual = tipo; fotoBase64 = null; coordenadasGPS = null;
             const msg = document.getElementById('msg-user');
-            msg.innerText = '📍 Obteniendo ubicación GPS...';
-            msg.style.color = 'blue';
+            msg.innerText = '📍 Obteniendo ubicación GPS...'; msg.style.color = 'blue';
             try {
                 coordenadasGPS = await obtenerGPS();
                 if (tipo === 'entrada' || tipo === 'salida') {
-                    msg.innerText = '📷 Abriendo cámara...';
-                    await iniciarCamara();
-                } else {
-                    await procesarRegistroConDatos();
-                }
+                    msg.innerText = '📷 Abriendo cámara...'; await iniciarCamara();
+                } else { await procesarRegistroConDatos(); }
             } catch (error) {
-                msg.innerText = error.error;
-                msg.style.color = 'red';
-                if (error.bloqueante) {
-                    setTimeout(function() { alert(error.error + '\n\nEl registro no se completará.'); }, 100);
-                }
+                msg.innerText = error.error; msg.style.color = 'red';
+                if (error.bloqueante) setTimeout(function() { alert(error.error); }, 100);
             }
         }
-
         async function procesarRegistroConDatos() {
             const msg = document.getElementById('msg-user');
-            msg.innerText = '⏳ Registrando...';
-            msg.style.color = 'blue';
-            const datos = {
-                accion: 'registrar_asistencia',
-                usuario: usuarioActual,
-                nombre: nombreUsuarioActual,
-                tipo: tipoRegistroActual,
-                lat: coordenadasGPS.lat,
-                lng: coordenadasGPS.lng,
-                precision: coordenadasGPS.precision,
-                foto: fotoBase64 || ''
-            };
+            msg.innerText = '⏳ Registrando...'; msg.style.color = 'blue';
             try {
-                const data = await llamarAppsScript(datos);
-                if (data.exito) {
-                    msg.innerText = '✅ ' + data.mensaje;
-                    msg.style.color = 'green';
-                    setTimeout(function() { msg.innerText = ''; }, 5000);
-                } else {
-                    msg.innerText = '❌ ' + data.mensaje;
-                    msg.style.color = 'red';
-                }
-            } catch (error) {
-                msg.innerText = '❌ Error de conexión';
-                msg.style.color = 'red';
-            }
+                const data = await llamarAppsScript({
+                    accion: 'registrar_asistencia', usuario: usuarioActual, nombre: nombreUsuarioActual,
+                    tipo: tipoRegistroActual, lat: coordenadasGPS.lat, lng: coordenadasGPS.lng,
+                    precision: coordenadasGPS.precision, foto: fotoBase64 || ''
+                });
+                if (data.exito) { msg.innerText = '✅ ' + data.mensaje; msg.style.color = 'green'; setTimeout(function() { msg.innerText = ''; }, 5000); }
+                else { msg.innerText = '❌ ' + data.mensaje; msg.style.color = 'red'; }
+            } catch (error) { msg.innerText = '❌ Error de conexión'; msg.style.color = 'red'; }
         }
 
         // ==================== LOGIN ====================
@@ -495,33 +392,24 @@ window.addEventListener('resize', aplicarVistaPorDispositivo);
             const btn = document.getElementById('btn-login');
             const msg = document.getElementById('msg-login');
             if (!user || !pass) { msg.innerText = 'Completa todos los campos'; return; }
-            btn.innerText = 'Conectando...';
-            btn.disabled = true;
-            msg.innerText = '';
+            btn.innerText = 'Conectando...'; btn.disabled = true; msg.innerText = '';
             try {
                 const data = await llamarAppsScript({ accion: 'login', usuario: user, password: pass });
                 if (data.exito) {
-                    usuarioActual = user;
-                    nombreUsuarioActual = data.nombre || user;
+                    usuarioActual = user; nombreUsuarioActual = data.nombre || user;
                     document.getElementById('pantalla-login').classList.remove('activa');
                     document.getElementById('main-container').classList.remove('login-container');
-                    const rolNormalizado = String(data.rol).toLowerCase().trim();
-                    if (rolNormalizado === 'admin' || rolNormalizado === 'administrador') {
+                    const rol = String(data.rol).toLowerCase().trim();
+                    if (rol === 'admin' || rol === 'administrador') {
                         document.getElementById('nombre-admin').innerText = data.nombre || user;
                         document.getElementById('pantalla-admin').classList.add('activa');
                     } else {
                         document.getElementById('nombre-user').innerText = data.nombre || user;
                         document.getElementById('pantalla-usuario').classList.add('activa');
                     }
-                } else {
-                    msg.innerText = data.mensaje || 'Error de Acceso';
-                }
-            } catch (error) {
-                msg.innerText = 'Error de conexión con el servidor';
-            } finally {
-                btn.innerText = 'Ingresar';
-                btn.disabled = false;
-            }
+                } else { msg.innerText = data.mensaje || 'Error de Acceso'; }
+            } catch (error) { msg.innerText = 'Error de conexión con el servidor'; }
+            finally { btn.innerText = 'Ingresar'; btn.disabled = false; }
         }
 
         // ==================== CAMBIAR CONTRASEÑA USUARIO ====================
@@ -532,33 +420,23 @@ window.addEventListener('resize', aplicarVistaPorDispositivo);
             document.getElementById('pass-confirmar').value = '';
             document.getElementById('msg-cambiar-pass').innerText = '';
         }
-        function cerrarModalCambiarPass() {
-            document.getElementById('modal-cambiar-pass').style.display = 'none';
-        }
+        function cerrarModalCambiarPass() { document.getElementById('modal-cambiar-pass').style.display = 'none'; }
         async function cambiarContrasena() {
-            const passActual = document.getElementById('pass-actual').value.trim();
-            const passNueva = document.getElementById('pass-nueva').value.trim();
-            const passConfirmar = document.getElementById('pass-confirmar').value.trim();
+            const pa = document.getElementById('pass-actual').value.trim();
+            const pn = document.getElementById('pass-nueva').value.trim();
+            const pc = document.getElementById('pass-confirmar').value.trim();
             const msg = document.getElementById('msg-cambiar-pass');
-            if (!passActual || !passNueva || !passConfirmar) { msg.innerText = '❌ Todos los campos son obligatorios'; msg.style.color = 'red'; return; }
-            if (passNueva.length < 6) { msg.innerText = '❌ Mínimo 6 caracteres'; msg.style.color = 'red'; return; }
-            if (passNueva !== passConfirmar) { msg.innerText = '❌ Las contraseñas no coinciden'; msg.style.color = 'red'; return; }
-            msg.innerText = '⏳ Validando...';
-            msg.style.color = 'blue';
+            if (!pa || !pn || !pc) { msg.innerText = '❌ Todos los campos son obligatorios'; msg.style.color = 'red'; return; }
+            if (pn.length < 6) { msg.innerText = '❌ Mínimo 6 caracteres'; msg.style.color = 'red'; return; }
+            if (pn !== pc) { msg.innerText = '❌ Las contraseñas no coinciden'; msg.style.color = 'red'; return; }
+            msg.innerText = '⏳ Validando...'; msg.style.color = 'blue';
             try {
-                const data = await llamarAppsScript({ accion: 'cambiar_password', usuario: usuarioActual, passwordActual: passActual, passwordNueva: passNueva });
+                const data = await llamarAppsScript({ accion: 'cambiar_password', usuario: usuarioActual, passwordActual: pa, passwordNueva: pn });
                 if (data.exito) {
-                    msg.innerText = '✅ ' + data.mensaje;
-                    msg.style.color = 'green';
-                    setTimeout(function() { cerrarModalCambiarPass(); alert('✅ Contraseña actualizada. Inicia sesión nuevamente.'); cerrarSesion(); }, 1500);
-                } else {
-                    msg.innerText = '❌ ' + data.mensaje;
-                    msg.style.color = 'red';
-                }
-            } catch (error) {
-                msg.innerText = '❌ Error de conexión';
-                msg.style.color = 'red';
-            }
+                    msg.innerText = '✅ ' + data.mensaje; msg.style.color = 'green';
+                    setTimeout(function() { cerrarModalCambiarPass(); alert('✅ Contraseña actualizada.'); cerrarSesion(); }, 1500);
+                } else { msg.innerText = '❌ ' + data.mensaje; msg.style.color = 'red'; }
+            } catch (error) { msg.innerText = '❌ Error de conexión'; msg.style.color = 'red'; }
         }
 
         // ==================== CAMBIAR CONTRASEÑA ADMIN ====================
@@ -571,9 +449,7 @@ window.addEventListener('resize', aplicarVistaPorDispositivo);
             document.getElementById('btn-guardar-admin').disabled = true;
             resetearRequisitos();
         }
-        function cerrarModalCambiarPassAdmin() {
-            document.getElementById('modal-cambiar-pass-admin').style.display = 'none';
-        }
+        function cerrarModalCambiarPassAdmin() { document.getElementById('modal-cambiar-pass-admin').style.display = 'none'; }
         function resetearRequisitos() {
             const reqs = [
                 { id: 'req-longitud', texto: 'Mínimo 8 caracteres' },
@@ -584,9 +460,7 @@ window.addEventListener('resize', aplicarVistaPorDispositivo);
             ];
             reqs.forEach(function(r) {
                 const el = document.getElementById(r.id);
-                el.innerText = '❌ ' + r.texto;
-                el.classList.remove('cumplido');
-                el.classList.add('no-cumplido');
+                el.innerText = '❌ ' + r.texto; el.classList.remove('cumplido'); el.classList.add('no-cumplido');
             });
             document.getElementById('barra-fortaleza-fill').style.width = '0%';
             document.getElementById('fortaleza-texto').innerText = 'Ingresa una contraseña';
@@ -614,9 +488,7 @@ window.addEventListener('resize', aplicarVistaPorDispositivo);
             else if (cumplidos <= 2) { texto.innerText = '🔴 Débil'; texto.style.color = '#dc3545'; barra.style.background = '#dc3545'; }
             else if (cumplidos <= 4) { texto.innerText = '🟡 Media'; texto.style.color = '#ffc107'; barra.style.background = '#ffc107'; }
             else { texto.innerText = '🟢 Fuerte'; texto.style.color = '#28a745'; barra.style.background = '#28a745'; }
-            const todasCumplidas = tieneLongitud && tieneMayus && tieneMinus && tieneNumero && tieneEspecial;
-            const coinciden = pass === confirmar && pass.length > 0;
-            document.getElementById('btn-guardar-admin').disabled = !(todasCumplidas && coinciden);
+            document.getElementById('btn-guardar-admin').disabled = !((tieneLongitud && tieneMayus && tieneMinus && tieneNumero && tieneEspecial) && pass === confirmar && pass.length > 0);
         }
         function actualizarRequisito(id, cumplido, textoBase) {
             const el = document.getElementById(id);
@@ -624,31 +496,23 @@ window.addEventListener('resize', aplicarVistaPorDispositivo);
             else { el.innerText = '❌ ' + textoBase; el.classList.remove('cumplido'); el.classList.add('no-cumplido'); }
         }
         async function cambiarContrasenaAdmin() {
-            const passActual = document.getElementById('admin-pass-actual').value.trim();
-            const passNueva = document.getElementById('admin-pass-nueva').value.trim();
-            const passConfirmar = document.getElementById('admin-pass-confirmar').value.trim();
+            const pa = document.getElementById('admin-pass-actual').value.trim();
+            const pn = document.getElementById('admin-pass-nueva').value.trim();
+            const pc = document.getElementById('admin-pass-confirmar').value.trim();
             const msg = document.getElementById('msg-cambiar-pass-admin');
-            if (!passActual || !passNueva || !passConfirmar) { msg.innerText = '❌ Todos los campos son obligatorios'; msg.style.color = 'red'; return; }
-            if (passNueva !== passConfirmar) { msg.innerText = '❌ Las contraseñas no coinciden'; msg.style.color = 'red'; return; }
-            msg.innerText = '⏳ Validando...';
-            msg.style.color = 'blue';
+            if (!pa || !pn || !pc) { msg.innerText = '❌ Todos los campos son obligatorios'; msg.style.color = 'red'; return; }
+            if (pn !== pc) { msg.innerText = '❌ Las contraseñas no coinciden'; msg.style.color = 'red'; return; }
+            msg.innerText = '⏳ Validando...'; msg.style.color = 'blue';
             try {
-                const data = await llamarAppsScript({ accion: 'cambiar_password', usuario: usuarioActual, passwordActual: passActual, passwordNueva: passNueva });
+                const data = await llamarAppsScript({ accion: 'cambiar_password', usuario: usuarioActual, passwordActual: pa, passwordNueva: pn });
                 if (data.exito) {
-                    msg.innerText = '✅ ' + data.mensaje;
-                    msg.style.color = 'green';
-                    setTimeout(function() { cerrarModalCambiarPassAdmin(); alert('✅ Contraseña de administrador actualizada. Se cerrará la sesión.'); cerrarSesion(); }, 1500);
-                } else {
-                    msg.innerText = '❌ ' + data.mensaje;
-                    msg.style.color = 'red';
-                }
-            } catch (error) {
-                msg.innerText = '❌ Error de conexión';
-                msg.style.color = 'red';
-            }
+                    msg.innerText = '✅ ' + data.mensaje; msg.style.color = 'green';
+                    setTimeout(function() { cerrarModalCambiarPassAdmin(); alert('✅ Contraseña actualizada.'); cerrarSesion(); }, 1500);
+                } else { msg.innerText = '❌ ' + data.mensaje; msg.style.color = 'red'; }
+            } catch (error) { msg.innerText = '❌ Error de conexión'; msg.style.color = 'red'; }
         }
 
-        // ==================== CREAR EMPLEADO ====================
+        // ==================== CRUD EMPLEADOS ====================
         async function crearEmpleado() {
             const data = {
                 accion: 'crear_empleado',
@@ -661,29 +525,19 @@ window.addEventListener('resize', aplicarVistaPorDispositivo);
             };
             const msg = document.getElementById('msg-crear');
             if (!data.usuario || !data.password || !data.nombre) { msg.innerText = '❌ Usuario, Password y Nombre son obligatorios'; msg.style.color = 'red'; return; }
-            msg.innerText = '⏳ Guardando...';
-            msg.style.color = 'blue';
+            msg.innerText = '⏳ Guardando...'; msg.style.color = 'blue';
             try {
                 const res = await llamarAppsScript(data);
                 if (res.exito) {
-                    msg.innerText = '✅ ' + res.mensaje;
-                    msg.style.color = 'green';
+                    msg.innerText = '✅ ' + res.mensaje; msg.style.color = 'green';
                     document.getElementById('emp-usuario').value = '';
                     document.getElementById('emp-password').value = '';
                     document.getElementById('emp-nombre').value = '';
                     document.getElementById('emp-area').value = '';
                     document.getElementById('emp-cargo').value = '';
-                } else {
-                    msg.innerText = '❌ ' + res.mensaje;
-                    msg.style.color = 'red';
-                }
-            } catch (error) {
-                msg.innerText = '❌ Error de conexión';
-                msg.style.color = 'red';
-            }
+                } else { msg.innerText = '❌ ' + res.mensaje; msg.style.color = 'red'; }
+            } catch (error) { msg.innerText = '❌ Error de conexión'; msg.style.color = 'red'; }
         }
-
-        // ==================== LISTAR EMPLEADOS ====================
         async function cargarEmpleados() {
             const contenedor = document.getElementById('tabla-empleados');
             contenedor.innerHTML = '<p class="loading">Cargando...</p>';
@@ -696,12 +550,8 @@ window.addEventListener('resize', aplicarVistaPorDispositivo);
                     });
                     html += '</tbody></table>';
                     contenedor.innerHTML = html;
-                } else {
-                    contenedor.innerHTML = '<p class="loading">No hay empleados registrados</p>';
-                }
-            } catch (error) {
-                contenedor.innerHTML = '<p class="error">Error al cargar</p>';
-            }
+                } else { contenedor.innerHTML = '<p class="loading">No hay empleados registrados</p>'; }
+            } catch (error) { contenedor.innerHTML = '<p class="error">Error al cargar</p>'; }
         }
         async function eliminarEmpleado(usuario) {
             if (!confirm('¿Eliminar usuario "' + usuario + '"?')) return;
@@ -712,98 +562,61 @@ window.addEventListener('resize', aplicarVistaPorDispositivo);
             } catch (error) { alert('❌ Error de conexión'); }
         }
 
-        // ==================== LISTAR ASISTENCIAS ====================
+        // ==================== ASISTENCIAS ====================
         async function cargarAsistencias() {
-    const contenedor = document.getElementById('tabla-asistencias');
-    contenedor.innerHTML = '<p class="loading">Cargando...</p>';
-    try {
-        const data = await llamarAppsScript({ accion: 'listar_asistencias' });
-        if (data.exito && data.registros && data.registros.length > 0) {
-            let html = '<table><thead><tr><th>Usuario</th><th>Nombre</th><th>Entrada</th><th>Comida In</th><th>Comida Out</th><th>Salida</th><th>T.Total</th><th>T.Prod</th></tr></thead><tbody>';
-            data.registros.forEach(function(reg) {
-                html += '<tr>';
-                html += '<td>' + reg.usuario + '</td>';
-                html += '<td>' + reg.nombre + '</td>';
-                html += '<td>' + formatearHoraCliente(reg.horaEntrada) + '</td>';
-                html += '<td>' + formatearHoraCliente(reg.horaIniRef) + '</td>';
-                html += '<td>' + formatearHoraCliente(reg.horaFinRef) + '</td>';
-                html += '<td>' + formatearHoraCliente(reg.horaSalida) + '</td>';
-                html += '<td>' + (reg.tiempoTotal || '-') + '</td>';
-                html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
-                html += '</tr>';
-            });
-            html += '</tbody></table>';
-            contenedor.innerHTML = html;
-        } else {
-            contenedor.innerHTML = '<p class="loading">No hay registros</p>';
+            const contenedor = document.getElementById('tabla-asistencias');
+            contenedor.innerHTML = '<p class="loading">Cargando...</p>';
+            try {
+                const data = await llamarAppsScript({ accion: 'listar_asistencias' });
+                if (data.exito && data.registros && data.registros.length > 0) {
+                    let html = '<table><thead><tr><th>Usuario</th><th>Nombre</th><th>Entrada</th><th>Comida In</th><th>Comida Out</th><th>Salida</th><th>T.Total</th><th>T.Prod</th></tr></thead><tbody>';
+                    data.registros.forEach(function(reg) {
+                        html += '<tr>';
+                        html += '<td>' + reg.usuario + '</td>';
+                        html += '<td>' + reg.nombre + '</td>';
+                        html += '<td>' + formatearHoraCliente(reg.horaEntrada) + '</td>';
+                        html += '<td>' + formatearHoraCliente(reg.horaIniRef) + '</td>';
+                        html += '<td>' + formatearHoraCliente(reg.horaFinRef) + '</td>';
+                        html += '<td>' + formatearHoraCliente(reg.horaSalida) + '</td>';
+                        html += '<td>' + (reg.tiempoTotal || '-') + '</td>';
+                        html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
+                        html += '</tr>';
+                    });
+                    html += '</tbody></table>';
+                    contenedor.innerHTML = html;
+                } else { contenedor.innerHTML = '<p class="loading">No hay registros</p>'; }
+            } catch (error) { contenedor.innerHTML = '<p class="error">Error al cargar</p>'; }
         }
-    } catch (error) {
-        contenedor.innerHTML = '<p class="error">Error al cargar</p>';
-    }
-}
-
-// Función para formatear horas que vienen como "Sat Dec 30 1899 21:31:02..."
-function formatearHoraCliente(valor) {
-    if (!valor || valor === '' || valor === '-') return '-';
-    
-    // Si ya está formateada (HH:mm:ss), devolverla tal cual
-    if (/^\d{2}:\d{2}:\d{2}$/.test(valor)) return valor;
-    
-    // Si es un objeto Date o string de fecha, extraer la hora
-    try {
-        const fecha = new Date(valor);
-        if (isNaN(fecha.getTime())) return valor; // No es fecha válida
-        
-        const horas = String(fecha.getHours()).padStart(2, '0');
-        const minutos = String(fecha.getMinutes()).padStart(2, '0');
-        const segundos = String(fecha.getSeconds()).padStart(2, '0');
-        return horas + ':' + minutos + ':' + segundos;
-    } catch (e) {
-        return valor;
-    }
-}
-
-        // ==================== MI REGISTRO DE HOY ====================
-        async function cargarMiRegistro() {async function cargarMiRegistro() {
-    const contenedor = document.getElementById('mi-registro-hoy');
-    contenedor.innerHTML = '<p class="loading">Cargando...</p>';
-    try {
-        const data = await llamarAppsScript({ accion: 'listar_asistencias' });
-        if (data.exito && data.registros) {
-            const hoy = new Date();
-            const dia = String(hoy.getDate()).padStart(2, '0');
-            const mes = String(hoy.getMonth() + 1).padStart(2, '0');
-            const anio = hoy.getFullYear();
-            const hoyFormateado = dia + '/' + mes + '/' + anio;
-            
-            const miRegistro = data.registros.find(function(r) {
-                return r.usuario === usuarioActual && r.fechaEntrada === hoyFormateado;
-            });
-            
-            if (miRegistro) {
-                let html = '<table><tbody>';
-                html += '<tr><td><strong>Entrada:</strong></td><td>' + formatearHoraCliente(miRegistro.horaEntrada) + '</td></tr>';
-                html += '<tr><td><strong>Comida In:</strong></td><td>' + formatearHoraCliente(miRegistro.horaIniRef) + '</td></tr>';
-                html += '<tr><td><strong>Comida Out:</strong></td><td>' + formatearHoraCliente(miRegistro.horaFinRef) + '</td></tr>';
-                html += '<tr><td><strong>Salida:</strong></td><td>' + formatearHoraCliente(miRegistro.horaSalida) + '</td></tr>';
-                html += '<tr><td><strong>T. Productivo:</strong></td><td>' + (miRegistro.tiempoProductivo || '-') + '</td></tr>';
-                html += '<tr><td><strong>T. Total:</strong></td><td>' + (miRegistro.tiempoTotal || '-') + '</td></tr>';
-                html += '</tbody></table>';
-                contenedor.innerHTML = html;
-            } else {
-                contenedor.innerHTML = '<p class="loading">No has registrado entrada hoy</p>';
-            }
+        async function cargarMiRegistro() {
+            const contenedor = document.getElementById('mi-registro-hoy');
+            contenedor.innerHTML = '<p class="loading">Cargando...</p>';
+            try {
+                const data = await llamarAppsScript({ accion: 'listar_asistencias' });
+                if (data.exito && data.registros) {
+                    const hoy = new Date();
+                    const dia = String(hoy.getDate()).padStart(2, '0');
+                    const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+                    const anio = hoy.getFullYear();
+                    const hoyFormateado = dia + '/' + mes + '/' + anio;
+                    const miRegistro = data.registros.find(function(r) { return r.usuario === usuarioActual && r.fechaEntrada === hoyFormateado; });
+                    if (miRegistro) {
+                        let html = '<table><tbody>';
+                        html += '<tr><td><strong>Entrada:</strong></td><td>' + formatearHoraCliente(miRegistro.horaEntrada) + '</td></tr>';
+                        html += '<tr><td><strong>Comida In:</strong></td><td>' + formatearHoraCliente(miRegistro.horaIniRef) + '</td></tr>';
+                        html += '<tr><td><strong>Comida Out:</strong></td><td>' + formatearHoraCliente(miRegistro.horaFinRef) + '</td></tr>';
+                        html += '<tr><td><strong>Salida:</strong></td><td>' + formatearHoraCliente(miRegistro.horaSalida) + '</td></tr>';
+                        html += '<tr><td><strong>T. Productivo:</strong></td><td>' + (miRegistro.tiempoProductivo || '-') + '</td></tr>';
+                        html += '<tr><td><strong>T. Total:</strong></td><td>' + (miRegistro.tiempoTotal || '-') + '</td></tr>';
+                        html += '</tbody></table>';
+                        contenedor.innerHTML = html;
+                    } else { contenedor.innerHTML = '<p class="loading">No has registrado entrada hoy</p>'; }
+                }
+            } catch (error) { contenedor.innerHTML = '<p class="error">Error al cargar</p>'; }
         }
-    } catch (error) {
-        contenedor.innerHTML = '<p class="error">Error al cargar</p>';
-    }
-}
 
         // ==================== CERRAR SESIÓN ====================
         function cerrarSesion() {
-            usuarioActual = null;
-            nombreUsuarioActual = null;
-            detenerCamara();
+            usuarioActual = null; nombreUsuarioActual = null; detenerCamara();
             document.getElementById('pantalla-usuario').classList.remove('activa');
             document.getElementById('pantalla-admin').classList.remove('activa');
             document.getElementById('usuario').value = '';
@@ -815,9 +628,7 @@ function formatearHoraCliente(valor) {
             document.getElementById('pantalla-login').classList.add('activa');
         }
 
-        document.getElementById('password').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') iniciarSesion();
-        });
+        document.getElementById('password').addEventListener('keypress', function(e) { if (e.key === 'Enter') iniciarSesion(); });
     </script>
 </body>
 </html>
