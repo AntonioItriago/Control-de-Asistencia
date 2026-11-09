@@ -967,20 +967,22 @@
     try {
         const data = await llamarAppsScript({ accion: 'listar_asistencias' });
         if (data.exito && data.registros) {
-            // Obtener fecha de hoy en formato dd/MM/yyyy (con ceros a la izquierda)
+            // Formatear fecha de hoy con ceros a la izquierda (dd/MM/yyyy)
             const hoy = new Date();
             const dia = String(hoy.getDate()).padStart(2, '0');
             const mes = String(hoy.getMonth() + 1).padStart(2, '0');
             const anio = hoy.getFullYear();
             const hoyFormateado = `${dia}/${mes}/${anio}`;
             
-            console.log('Hoy formateado:', hoyFormateado);
+            console.log('Buscando registro para hoy:', hoyFormateado);
+            console.log('Usuario actual:', usuarioActual);
             
             const miRegistro = data.registros.find(r => 
                 r.usuario === usuarioActual && r.fechaEntrada === hoyFormateado
             );
             
             if (miRegistro) {
+                console.log('Registro encontrado:', miRegistro);
                 let html = '<table><tbody>';
                 html += `<tr><td><strong>Entrada:</strong></td><td>${miRegistro.horaEntrada || 'Pendiente'}</td></tr>`;
                 html += `<tr><td><strong>Comida In:</strong></td><td>${miRegistro.horaIniRef || 'Pendiente'}</td></tr>`;
@@ -995,6 +997,7 @@
             }
         }
     } catch (error) {
+        console.error('Error al cargar registro:', error);
         contenedor.innerHTML = '<p class="error">Error al cargar</p>';
     }
 }
