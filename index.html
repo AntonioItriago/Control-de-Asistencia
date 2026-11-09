@@ -76,6 +76,31 @@
         #video { width: 100%; max-width: 400px; border-radius: 8px; }
         #canvas { display: none; }
         #foto-preview { width: 100%; max-width: 400px; border-radius: 8px; margin-top: 10px; }
+        /* Por defecto, todo visible */
+.vista-solo-movil { display: block; }
+.vista-oculta-movil { display: block; }
+
+/* En Tablet y PC: ocultar lo exclusivo de móvil */
+.vista-tablet .vista-solo-movil,
+.vista-pc .vista-solo-movil {
+    display: none !important;
+}
+
+/* En Móvil: ocultar lo exclusivo de escritorio */
+.vista-movil .vista-oculta-movil {
+    display: none !important;
+}
+
+/* Mostrar alerta en tablet/pc */
+.vista-tablet .alerta-dispositivo,
+.vista-pc .alerta-dispositivo {
+    display: block !important;
+}
+
+/* Ajuste de grid en móvil: solo 2 botones (Entrada/Salida) */
+.vista-movil .grid-4 {
+    grid-template-columns: 1fr 1fr;
+}
     </style>
 </head>
 <body>
@@ -99,27 +124,45 @@
         </div>
 
         <!-- PANEL USUARIO -->
-        <div id="pantalla-usuario" class="pantalla">
-            <h2>👤 Panel de Empleado</h2>
-            <div class="info-box">Bienvenido, <strong id="nombre-user"></strong></div>
-            <button id="btn-instalar" class="btn-install" style="display: none;" onclick="instalarApp()">📱 Instalar Aplicación en este dispositivo</button>
-            <div class="titulo-con-boton">
-                <h3>📍 Registrar Jornada</h3>
-                <button class="btn-cambiar-pass" onclick="mostrarModalCambiarPass()">🔑 Cambiar Contraseña</button>
-            </div>
-            <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 15px;">GPS obligatorio para todos los registros. Cámara obligatoria para Entrada y Salida.</p>
-            <div class="grid-4">
-                <button class="btn-success" onclick="iniciarRegistro('entrada')">✅ Entrada</button>
-                <button class="btn-warning" onclick="iniciarRegistro('comida-in')">🍽️ Comida In</button>
-                <button class="btn-info" onclick="iniciarRegistro('comida-out')">☕ Comida Out</button>
-                <button class="btn-danger" onclick="iniciarRegistro('salida')">🚪 Salida</button>
-            </div>
-            <h3>📊 Mi Registro de Hoy</h3>
-            <button onclick="cargarMiRegistro()">🔄 Ver mi registro de hoy</button>
-            <div id="mi-registro-hoy"><p class="loading">Aún no has consultado tu registro</p></div>
-            <button class="btn-secondary" onclick="cerrarSesion()" style="margin-top: 20px;">Cerrar Sesión</button>
-            <p id="msg-user" class="exito"></p>
-        </div>
+<div id="pantalla-usuario" class="pantalla">
+    <h2>👤 Panel de Empleado</h2>
+    <div class="info-box">Bienvenido, <strong id="nombre-user"></strong></div>
+    
+    <button id="btn-instalar" class="btn-install" style="display: none;" onclick="instalarApp()">
+        📱 Instalar Aplicación en este dispositivo
+    </button>
+    
+    <div class="titulo-con-boton">
+        <h3>📍 Registrar Jornada</h3>
+        <button class="btn-cambiar-pass vista-oculta-movil" onclick="mostrarModalCambiarPass()">🔑 Cambiar Contraseña</button>
+    </div>
+    
+    <p style="text-align: center; color: #666; font-size: 14px; margin-bottom: 15px;">
+        GPS obligatorio para todos los registros. Cámara obligatoria para Entrada y Salida.
+    </p>
+    
+    <!-- Entrada y Salida: SOLO en móvil -->
+    <div class="grid-4">
+        <button class="btn-success vista-solo-movil" onclick="iniciarRegistro('entrada')">✅ Entrada</button>
+        <button class="btn-warning vista-oculta-movil" onclick="iniciarRegistro('comida-in')">🍽️ Comida In</button>
+        <button class="btn-info vista-oculta-movil" onclick="iniciarRegistro('comida-out')">☕ Comida Out</button>
+        <button class="btn-danger vista-solo-movil" onclick="iniciarRegistro('salida')">🚪 Salida</button>
+    </div>
+    
+    <!-- Mensaje para PC/Tablet que intente marcar -->
+    <div class="alerta-dispositivo vista-oculta-movil" style="background: #fff3cd; padding: 10px; border-radius: 6px; margin: 15px 0; font-size: 13px; color: #856404; text-align: center; display: none;">
+        ⚠️ Para registrar Entrada o Salida debes usar tu <strong>teléfono móvil</strong> (se requiere GPS y cámara).
+    </div>
+    
+    <h3 class="vista-oculta-movil">📊 Mi Registro de Hoy</h3>
+    <button class="vista-oculta-movil" onclick="cargarMiRegistro()">🔄 Ver mi registro de hoy</button>
+    <div id="mi-registro-hoy" class="vista-oculta-movil">
+        <p class="loading">Aún no has consultado tu registro</p>
+    </div>
+    
+    <button class="btn-secondary" onclick="cerrarSesion()" style="margin-top: 20px;">Cerrar Sesión</button>
+    <p id="msg-user" class="exito"></p>
+</div>
 
         <!-- MODAL CAMBIAR CONTRASEÑA USUARIO -->
         <div id="modal-cambiar-pass" class="modal">
@@ -224,6 +267,33 @@
         let fotoBase64 = null;
         let tipoRegistroActual = null;
         let coordenadasGPS = null;
+
+        // ==================== DETECCIÓN DE DISPOSITIVO ====================
+function detectarDispositivo() {
+    const ua = navigator.userAgent.toLowerCase();
+    const esMovil = /android|iphone|ipod|mobile/i.test(ua);
+    const esTablet = /ipad|android(?!.*mobile)|tablet|kindle|silk/i.test(ua);
+    const esTactil = navigator.maxTouchPoints > 1;
+    const ancho = window.innerWidth;
+
+    if (esMovil && ancho < 768) return 'movil';
+    if (esTablet || (esTactil && ancho >= 768)) return 'tablet';
+    if (ancho >= 1024) return 'pc';
+    return 'movil'; // Por defecto, pantallas pequeñas = móvil
+}
+
+// Aplicar clases al cargar
+function aplicarVistaPorDispositivo() {
+    const dispositivo = detectarDispositivo();
+    const body = document.body;
+    body.classList.remove('vista-movil', 'vista-tablet', 'vista-pc');
+    body.classList.add('vista-' + dispositivo);
+    console.log('Dispositivo detectado:', dispositivo);
+}
+
+// Ejecutar al cargar y al redimensionar
+window.addEventListener('DOMContentLoaded', aplicarVistaPorDispositivo);
+window.addEventListener('resize', aplicarVistaPorDispositivo);
 
         // ==================== PWA ====================
         window.addEventListener('beforeinstallprompt', function(e) {
