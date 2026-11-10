@@ -93,6 +93,18 @@
         .vista-tablet .alerta-dispositivo,
         .vista-pc .alerta-dispositivo { display: block !important; }
         .vista-movil .grid-4 { grid-template-columns: 1fr 1fr; }
+        /* Modal de detalle de registro */
+.modal-detalle { display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); overflow-y: auto; }
+.modal-detalle-content { background: white; margin: 5% auto; padding: 20px; border-radius: 10px; width: 90%; max-width: 500px; text-align: center; }
+.modal-detalle-content h3 { color: #007bff; margin-bottom: 15px; }
+.detalle-info { background: #f8f9fa; padding: 12px; border-radius: 6px; margin: 10px 0; text-align: left; }
+.detalle-info strong { color: #333; }
+.detalle-info a { color: #007bff; text-decoration: none; word-break: break-all; }
+.detalle-info a:hover { text-decoration: underline; }
+.detalle-foto { max-width: 100%; border-radius: 8px; margin-top: 10px; border: 2px solid #ddd; }
+.hora-link { color: #007bff; cursor: pointer; text-decoration: underline; font-weight: 600; }
+.hora-link:hover { color: #0056b3; }
+.btn-cerrar-detalle { background: #6c757d; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -643,51 +655,144 @@
         }
         function aplicarFiltros() { mostrarRegistrosFiltrados(); }
         function mostrarRegistrosFiltrados() {
-            const contenedor = document.getElementById('tabla-asistencias');
-            const trabajador = document.getElementById('filtro-trabajador').value;
-            const desde = document.getElementById('filtro-desde').value;
-            const hasta = document.getElementById('filtro-hasta').value;
-            const tsDesde = desde ? fechaATimestamp(desde) : null;
-            const tsHasta = hasta ? fechaATimestamp(hasta) : null;
-            let filtrados = todosLosRegistros.filter(function(r) {
-                if (trabajador !== 'todos' && r.usuario !== trabajador) return false;
-                const ts = fechaATimestamp(r.fechaEntrada);
-                if (tsDesde !== null || tsHasta !== null) {
-                    if (ts === null) return false;
-                    if (tsDesde !== null && ts < tsDesde) return false;
-                    if (tsHasta !== null && ts > tsHasta) return false;
-                }
-                return true;
-            });
-            filtrados.sort(function(a, b) {
-                return (fechaATimestamp(b.fechaEntrada) || 0) - (fechaATimestamp(a.fechaEntrada) || 0);
-            });
-            if (filtrados.length === 0) {
-                contenedor.innerHTML = '<p class="loading">No hay registros con esos filtros</p>';
-                return;
-            }
-            let html = '<table><thead><tr>';
-            html += '<th>Fecha</th><th>Usuario</th><th>Nombre</th>';
-            html += '<th>Entrada</th><th>Comida In</th><th>Comida Out</th><th>Salida</th>';
-            html += '<th>T.Total</th><th>T.Prod</th>';
-            html += '</tr></thead><tbody>';
-            filtrados.forEach(function(reg) {
-                html += '<tr>';
-                html += '<td><strong>' + formatearFechaCliente(reg.fechaEntrada) + '</strong></td>';
-                html += '<td>' + reg.usuario + '</td>';
-                html += '<td>' + reg.nombre + '</td>';
-                html += '<td>' + formatearHoraCliente(reg.horaEntrada) + '</td>';
-                html += '<td>' + formatearHoraCliente(reg.horaIniRef) + '</td>';
-                html += '<td>' + formatearHoraCliente(reg.horaFinRef) + '</td>';
-                html += '<td>' + formatearHoraCliente(reg.horaSalida) + '</td>';
-                html += '<td>' + (reg.tiempoTotal || '-') + '</td>';
-                html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
-                html += '</tr>';
-            });
-            html += '</tbody></table>';
-            html += '<p class="exito">Total: ' + filtrados.length + ' registros</p>';
-            contenedor.innerHTML = html;
+    const contenedor = document.getElementById('tabla-asistencias');
+    const trabajador = document.getElementById('filtro-trabajador').value;
+    const desde = document.getElementById('filtro-desde').value;
+    const hasta = document.getElementById('filtro-hasta').value;
+    const tsDesde = desde ? fechaATimestamp(desde) : null;
+    const tsHasta = hasta ? fechaATimestamp(hasta) : null;
+    
+    let filtrados = todosLosRegistros.filter(function(r) {
+        if (trabajador !== 'todos' && r.usuario !== trabajador) return false;
+        const ts = fechaATimestamp(r.fechaEntrada);
+        if (tsDesde !== null || tsHasta !== null) {
+            if (ts === null) return false;
+            if (tsDesde !== null && ts < tsDesde) return false;
+            if (tsHasta !== null && ts > tsHasta) return false;
         }
+        return true;
+    });
+    
+    filtrados.sort(function(a, b) {
+        return (fechaATimestamp(b.fechaEntrada) || 0) - (fechaATimestamp(a.fechaEntrada) || 0);
+    });
+    
+    if (filtrados.length === 0) {
+        contenedor.innerHTML = '<p class="loading">No hay registros con esos filtros</p>';
+        return;
+    }
+    
+    let html = '<table><thead><tr>';
+    html += '<th>Fecha</th><th>Usuario</th><th>Nombre</th>';
+    html += '<th>Entrada</th><th>Comida In</th><th>Comida Out</th><th>Salida</th>';
+    html += '<th>T.Total</th><th>T.Prod</th>';
+    html += '</tr></thead><tbody>';
+    
+    filtrados.forEach(function(reg, idx) {
+        html += '<tr>';
+        html += '<td><strong>' + formatearFechaCliente(reg.fechaEntrada) + '</strong></td>';
+        html += '<td>' + reg.usuario + '</td>';
+        html += '<td>' + reg.nombre + '</td>';
+        html += '<td>' + hacerHoraClickeable(reg.horaEntrada, reg.ubicacionEntrada, reg.fotoEntrada, 'Entrada', idx) + '</td>';
+        html += '<td>' + hacerHoraClickeable(reg.horaIniRef, reg.ubicacionIniRef, '', 'Comida In', idx) + '</td>';
+        html += '<td>' + hacerHoraClickeable(reg.horaFinRef, reg.ubicacionFinRef, '', 'Comida Out', idx) + '</td>';
+        html += '<td>' + hacerHoraClickeable(reg.horaSalida, reg.ubicacionSalida, reg.fotoSalida, 'Salida', idx) + '</td>';
+        html += '<td>' + (reg.tiempoTotal || '-') + '</td>';
+        html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table>';
+    html += '<p class="exito">Total: ' + filtrados.length + ' registros</p>';
+    contenedor.innerHTML = html;
+}
+
+// Función auxiliar para hacer las horas clickeables
+function hacerHoraClickeable(hora, ubicacion, foto, tipo, idx) {
+    const horaFormateada = formatearHoraCliente(hora);
+    if (horaFormateada === '-' || horaFormateada.includes('Ver foto')) {
+        return horaFormateada;
+    }
+    // Guardar datos en un atributo data para recuperarlos al hacer clic
+    const datos = encodeURIComponent(JSON.stringify({
+        tipo: tipo,
+        hora: horaFormateada,
+        ubicacion: ubicacion || '',
+        foto: foto || ''
+    }));
+    return '<span class="hora-link" onclick="mostrarDetalle(\'' + datos + '\')">' + horaFormateada + ' 🔍</span>';
+}
+
+// Mostrar modal con GPS y foto
+function mostrarDetalle(datosEncoded) {
+    try {
+        const datos = JSON.parse(decodeURIComponent(datosEncoded));
+        const titulo = document.getElementById('detalle-titulo');
+        const contenido = document.getElementById('detalle-contenido');
+        
+        titulo.innerText = '📍 Detalle: ' + datos.tipo;
+        
+        let html = '<div class="detalle-info">';
+        html += '<p><strong>⏰ Hora:</strong> ' + datos.hora + '</p>';
+        
+        // GPS
+        if (datos.ubicacion && datos.ubicacion !== '' && datos.ubicacion !== '-') {
+            // Parsear coordenadas (formato: "10.1549732, -64.6848183")
+            const coords = datos.ubicacion.split(',');
+            if (coords.length === 2) {
+                const lat = parseFloat(coords[0].trim());
+                const lng = parseFloat(coords[1].trim());
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    const mapsUrl = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+                    html += '<p><strong>📍 Ubicación GPS:</strong></p>';
+                    html += '<p>Lat: ' + lat.toFixed(6) + ', Lng: ' + lng.toFixed(6) + '</p>';
+                    html += '<p><a href="' + mapsUrl + '" target="_blank">🗺️ Ver en Google Maps</a></p>';
+                } else {
+                    html += '<p><strong>📍 Ubicación:</strong> ' + datos.ubicacion + '</p>';
+                }
+            } else {
+                html += '<p><strong>📍 Ubicación:</strong> ' + datos.ubicacion + '</p>';
+            }
+        } else {
+            html += '<p><strong>📍 Ubicación:</strong> No disponible</p>';
+        }
+        
+        // Foto
+        if (datos.foto && datos.foto !== '' && datos.foto !== '-' && datos.foto.includes('drive.google.com')) {
+            // Convertir URL de Drive a URL de imagen directa
+            let imgUrl = datos.foto;
+            const match = imgUrl.match(/\/d\/([^\/]+)/);
+            if (match) {
+                imgUrl = 'https://drive.google.com/uc?export=view&id=' + match[1];
+            }
+            html += '<p><strong>📷 Foto:</strong></p>';
+            html += '<p><a href="' + datos.foto + '" target="_blank">🔗 Abrir foto en Drive</a></p>';
+            html += '<img src="' + imgUrl + '" class="detalle-foto" alt="Foto del registro" onerror="this.style.display=\'none\'">';
+        } else if (datos.foto && datos.foto !== '' && datos.foto !== '-') {
+            html += '<p><strong>📷 Foto:</strong> <a href="' + datos.foto + '" target="_blank">Ver foto</a></p>';
+        } else {
+            html += '<p><strong>📷 Foto:</strong> No disponible</p>';
+        }
+        
+        html += '</div>';
+        contenido.innerHTML = html;
+        document.getElementById('modal-detalle').style.display = 'block';
+    } catch (e) {
+        alert('Error al mostrar detalle: ' + e.message);
+    }
+}
+
+function cerrarModalDetalle() {
+    document.getElementById('modal-detalle').style.display = 'none';
+}
+
+// Cerrar modal al hacer clic fuera
+window.addEventListener('click', function(e) {
+    const modal = document.getElementById('modal-detalle');
+    if (e.target === modal) {
+        cerrarModalDetalle();
+    }
+});
         async function cargarMiRegistro() {
             const contenedor = document.getElementById('mi-registro-hoy');
             contenedor.innerHTML = '<p class="loading">Cargando...</p>';
@@ -731,5 +836,13 @@
 
         document.getElementById('password').addEventListener('keypress', function(e) { if (e.key === 'Enter') iniciarSesion(); });
     </script>
+    <!-- MODAL DETALLE GPS/FOTO -->
+<div id="modal-detalle" class="modal-detalle">
+    <div class="modal-detalle-content">
+        <h3 id="detalle-titulo">📍 Detalle del Registro</h3>
+        <div id="detalle-contenido"></div>
+        <button onclick="cerrarModalDetalle()" class="btn-cerrar-detalle">❌ Cerrar</button>
+    </div>
+</div>
 </body>
 </html>
