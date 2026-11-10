@@ -77,6 +77,12 @@
         #canvas { display: none; }
         #foto-preview { width: 100%; max-width: 400px; border-radius: 8px; margin-top: 10px; }
 
+        /* Filtros admin */
+        .filtros-container { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .filtros-container select,
+        .filtros-container input[type="date"] { padding: 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; width: 100%; }
+        .filtros-container label { font-size: 13px; color: #555; }
+
         /* Control por dispositivo */
         .vista-solo-movil { display: block; }
         .vista-oculta-movil { display: block; }
@@ -87,19 +93,6 @@
         .vista-tablet .alerta-dispositivo,
         .vista-pc .alerta-dispositivo { display: block !important; }
         .vista-movil .grid-4 { grid-template-columns: 1fr 1fr; }
-        /* Filtros del admin */
-.filtros-container select,
-.filtros-container input[type="date"] {
-    padding: 10px;
-    font-size: 14px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    width: 100%;
-}
-.filtros-container label {
-    font-size: 13px;
-    color: #555;
-}
     </style>
 </head>
 <body>
@@ -183,34 +176,29 @@
             <button onclick="cargarEmpleados()">🔄 Actualizar Lista</button>
             <div id="tabla-empleados"><p class="loading">Haz clic en "Actualizar Lista" para cargar</p></div>
             <h3>📊 Registros de Asistencia</h3>
-
-<!-- FILTROS -->
-<div class="filtros-container" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-    <div class="grid-2">
-        <div class="form-group" style="margin-bottom: 10px;">
-            <label>👤 Trabajador:</label>
-            <select id="filtro-trabajador">
-                <option value="todos">Todos los trabajadores</option>
-            </select>
-        </div>
-        <div class="form-group" style="margin-bottom: 10px;">
-            <label>📅 Fecha desde:</label>
-            <input type="date" id="filtro-desde">
-        </div>
-        <div class="form-group" style="margin-bottom: 10px;">
-            <label>📅 Fecha hasta:</label>
-            <input type="date" id="filtro-hasta">
-        </div>
-        <div class="form-group" style="margin-bottom: 10px; display: flex; align-items: flex-end;">
-            <button onclick="aplicarFiltros()" class="btn-success" style="margin-top: 0;">🔍 Buscar</button>
-        </div>
-    </div>
-</div>
-
-<button onclick="cargarAsistencias(true)" style="margin-bottom: 10px;">🔄 Cargar Todos los Registros</button>
-<div id="tabla-asistencias">
-    <p class="loading">Haz clic en "Cargar Registros" para ver</p>
-</div>
+            <div class="filtros-container">
+                <div class="grid-2">
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>👤 Trabajador:</label>
+                        <select id="filtro-trabajador">
+                            <option value="todos">Todos los trabajadores</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>📅 Fecha desde:</label>
+                        <input type="date" id="filtro-desde">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>📅 Fecha hasta:</label>
+                        <input type="date" id="filtro-hasta">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px; display: flex; align-items: flex-end;">
+                        <button onclick="aplicarFiltros()" class="btn-success" style="margin-top: 0;">🔍 Buscar</button>
+                    </div>
+                </div>
+            </div>
+            <button onclick="cargarAsistencias(true)" style="margin-bottom: 10px;">🔄 Cargar Todos los Registros</button>
+            <div id="tabla-asistencias"><p class="loading">Haz clic en "Cargar Registros" para ver</p></div>
             <button class="btn-secondary" onclick="cerrarSesion()">Cerrar Sesión</button>
         </div>
 
@@ -265,6 +253,7 @@
     </div>
 
     <script>
+        // ⚠️ REEMPLAZA CON TU URL REAL DE APPS SCRIPT
         const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbwg_8GJMiRL8YFvvF179O7areWnQtQCL209yIckoTzYaM4lmimbMr2nYlEo4VnW9Fc/exec";
 
         let usuarioActual = null;
@@ -274,6 +263,7 @@
         let fotoBase64 = null;
         let tipoRegistroActual = null;
         let coordenadasGPS = null;
+        let todosLosRegistros = [];
 
         // ==================== DETECCIÓN DE DISPOSITIVO ====================
         function detectarDispositivo() {
@@ -326,9 +316,30 @@
             return JSON.parse(texto);
         }
 
-        // ==================== FORMATEAR HORAS EN CLIENTE ====================
+        // ==================== FORMATEAR FECHAS Y HORAS ====================
+        function fechaATimestamp(valor) {
+            if (!valor) return null;
+            var s = String(valor).trim();
+            if (s === '' || s === '-') return null;
+            var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (m) return new Date(+m[3], +m[2] - 1, +m[1]).getTime();
+            m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (m) return new Date(+m[1], +m[2] - 1, +m[3]).getTime();
+            var f = new Date(s);
+            if (!isNaN(f.getTime())) return new Date(f.getFullYear(), f.getMonth(), f.getDate()).getTime();
+            return null;
+        }
+        function formatearFechaCliente(valor) {
+            var ts = fechaATimestamp(valor);
+            if (ts === null) return '-';
+            var f = new Date(ts);
+            return String(f.getDate()).padStart(2, '0') + '/' + String(f.getMonth() + 1).padStart(2, '0') + '/' + f.getFullYear();
+        }
         function formatearHoraCliente(valor) {
             if (!valor || valor === '' || valor === '-') return '-';
+            if (valor.includes && valor.includes('drive.google.com')) {
+                return '<a href="' + valor + '" target="_blank" style="color: #007bff;">📷 Ver foto</a>';
+            }
             if (/^\d{2}:\d{2}:\d{2}$/.test(valor)) return valor;
             try {
                 const fecha = new Date(valor);
@@ -601,142 +612,82 @@
             } catch (error) { alert('❌ Error de conexión'); }
         }
 
-        // ==================== ASISTENCIAS ====================
-        // Variable global para almacenar todos los registros
-let todosLosRegistros = [];
-
-async function cargarAsistencias(recargar) {
-    const contenedor = document.getElementById('tabla-asistencias');
-    
-    // Si no hay datos o se fuerza recarga, cargar desde el servidor
-    if (todosLosRegistros.length === 0 || recargar) {
-        contenedor.innerHTML = '<p class="loading">Cargando...</p>';
-        try {
-            const data = await llamarAppsScript({ accion: 'listar_asistencias' });
-            if (data.exito && data.registros) {
-                todosLosRegistros = data.registros;
-                // Poblar el selector de trabajadores
-                poblarSelectorTrabajadores();
-                // Mostrar todos los registros
-                mostrarRegistrosFiltrados();
+        // ==================== ASISTENCIAS CON FILTROS ====================
+        async function cargarAsistencias(recargar) {
+            const contenedor = document.getElementById('tabla-asistencias');
+            if (todosLosRegistros.length === 0 || recargar) {
+                contenedor.innerHTML = '<p class="loading">Cargando...</p>';
+                try {
+                    const data = await llamarAppsScript({ accion: 'listar_asistencias' });
+                    if (data.exito && data.registros) {
+                        todosLosRegistros = data.registros;
+                        poblarSelectorTrabajadores();
+                        mostrarRegistrosFiltrados();
+                    } else { contenedor.innerHTML = '<p class="loading">No hay registros</p>'; }
+                } catch (error) { contenedor.innerHTML = '<p class="error">Error al cargar</p>'; }
             } else {
-                contenedor.innerHTML = '<p class="loading">No hay registros</p>';
+                mostrarRegistrosFiltrados();
             }
-        } catch (error) {
-            contenedor.innerHTML = '<p class="error">Error al cargar</p>';
         }
-    } else {
-        // Ya tenemos datos, solo aplicar filtros
-        mostrarRegistrosFiltrados();
-    }
-}
-
-function poblarSelectorTrabajadores() {
-    const select = document.getElementById('filtro-trabajador');
-    // Obtener trabajadores únicos
-    const trabajadores = [...new Set(todosLosRegistros.map(r => r.usuario))];
-    
-    // Mantener la opción "Todos"
-    select.innerHTML = '<option value="todos">Todos los trabajadores</option>';
-    trabajadores.forEach(function(trab) {
-        const nombre = todosLosRegistros.find(r => r.usuario === trab).nombre;
-        const option = document.createElement('option');
-        option.value = trab;
-        option.textContent = trab + ' - ' + nombre;
-        select.appendChild(option);
-    });
-}
-
-function aplicarFiltros() {
-    mostrarRegistrosFiltrados();
-}
-
-function mostrarRegistrosFiltrados() {
-    const contenedor = document.getElementById('tabla-asistencias');
-    const trabajador = document.getElementById('filtro-trabajador').value;
-    const desde = document.getElementById('filtro-desde').value;
-    const hasta = document.getElementById('filtro-hasta').value;
-    
-    // Filtrar registros
-    let filtrados = todosLosRegistros.filter(function(r) {
-        // Filtro por trabajador
-        if (trabajador !== 'todos' && r.usuario !== trabajador) return false;
-        
-        // Filtro por fecha desde
-        if (desde) {
-            const fechaDesde = convertirFechaDDMMYYYY(desde);
-            if (r.fechaEntrada && r.fechaEntrada < fechaDesde) return false;
+        function poblarSelectorTrabajadores() {
+            const select = document.getElementById('filtro-trabajador');
+            const trabajadores = [...new Set(todosLosRegistros.map(function(r) { return r.usuario; }))];
+            select.innerHTML = '<option value="todos">Todos los trabajadores</option>';
+            trabajadores.forEach(function(trab) {
+                const nombre = todosLosRegistros.find(function(r) { return r.usuario === trab; }).nombre;
+                const option = document.createElement('option');
+                option.value = trab;
+                option.textContent = trab + ' - ' + nombre;
+                select.appendChild(option);
+            });
         }
-        
-        // Filtro por fecha hasta
-        if (hasta) {
-            const fechaHasta = convertirFechaDDMMYYYY(hasta);
-            if (r.fechaEntrada && r.fechaEntrada > fechaHasta) return false;
+        function aplicarFiltros() { mostrarRegistrosFiltrados(); }
+        function mostrarRegistrosFiltrados() {
+            const contenedor = document.getElementById('tabla-asistencias');
+            const trabajador = document.getElementById('filtro-trabajador').value;
+            const desde = document.getElementById('filtro-desde').value;
+            const hasta = document.getElementById('filtro-hasta').value;
+            const tsDesde = desde ? fechaATimestamp(desde) : null;
+            const tsHasta = hasta ? fechaATimestamp(hasta) : null;
+            let filtrados = todosLosRegistros.filter(function(r) {
+                if (trabajador !== 'todos' && r.usuario !== trabajador) return false;
+                const ts = fechaATimestamp(r.fechaEntrada);
+                if (tsDesde !== null || tsHasta !== null) {
+                    if (ts === null) return false;
+                    if (tsDesde !== null && ts < tsDesde) return false;
+                    if (tsHasta !== null && ts > tsHasta) return false;
+                }
+                return true;
+            });
+            filtrados.sort(function(a, b) {
+                return (fechaATimestamp(b.fechaEntrada) || 0) - (fechaATimestamp(a.fechaEntrada) || 0);
+            });
+            if (filtrados.length === 0) {
+                contenedor.innerHTML = '<p class="loading">No hay registros con esos filtros</p>';
+                return;
+            }
+            let html = '<table><thead><tr>';
+            html += '<th>Fecha</th><th>Usuario</th><th>Nombre</th>';
+            html += '<th>Entrada</th><th>Comida In</th><th>Comida Out</th><th>Salida</th>';
+            html += '<th>T.Total</th><th>T.Prod</th>';
+            html += '</tr></thead><tbody>';
+            filtrados.forEach(function(reg) {
+                html += '<tr>';
+                html += '<td><strong>' + formatearFechaCliente(reg.fechaEntrada) + '</strong></td>';
+                html += '<td>' + reg.usuario + '</td>';
+                html += '<td>' + reg.nombre + '</td>';
+                html += '<td>' + formatearHoraCliente(reg.horaEntrada) + '</td>';
+                html += '<td>' + formatearHoraCliente(reg.horaIniRef) + '</td>';
+                html += '<td>' + formatearHoraCliente(reg.horaFinRef) + '</td>';
+                html += '<td>' + formatearHoraCliente(reg.horaSalida) + '</td>';
+                html += '<td>' + (reg.tiempoTotal || '-') + '</td>';
+                html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            html += '<p class="exito">Total: ' + filtrados.length + ' registros</p>';
+            contenedor.innerHTML = html;
         }
-        
-        return true;
-    });
-    
-    // Ordenar por fecha descendente (más reciente primero)
-    filtrados.sort(function(a, b) {
-        return b.fechaEntrada.localeCompare(a.fechaEntrada);
-    });
-    
-    if (filtrados.length === 0) {
-        contenedor.innerHTML = '<p class="loading">No hay registros con esos filtros</p>';
-        return;
-    }
-    
-    let html = '<table><thead><tr>';
-    html += '<th>Fecha</th><th>Usuario</th><th>Nombre</th>';
-    html += '<th>Entrada</th><th>Comida In</th><th>Comida Out</th><th>Salida</th>';
-    html += '<th>T.Total</th><th>T.Prod</th>';
-    html += '</tr></thead><tbody>';
-    
-    filtrados.forEach(function(reg) {
-        html += '<tr>';
-        html += '<td><strong>' + (reg.fechaEntrada || '-') + '</strong></td>';
-        html += '<td>' + reg.usuario + '</td>';
-        html += '<td>' + reg.nombre + '</td>';
-        html += '<td>' + formatearHoraCliente(reg.horaEntrada) + '</td>';
-        html += '<td>' + formatearHoraCliente(reg.horaIniRef) + '</td>';
-        html += '<td>' + formatearHoraCliente(reg.horaFinRef) + '</td>';
-        html += '<td>' + formatearHoraCliente(reg.horaSalida) + '</td>';
-        html += '<td>' + (reg.tiempoTotal || '-') + '</td>';
-        html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
-        html += '</tr>';
-    });
-    
-    html += '</tbody></table>';
-    html += '<p class="exito">Total: ' + filtrados.length + ' registros</p>';
-    contenedor.innerHTML = html;
-}
-
-// Convierte fecha de input (YYYY-MM-DD) a formato dd/MM/yyyy para comparar
-function convertirFechaDDMMYYYY(fechaInput) {
-    if (!fechaInput) return '';
-    const partes = fechaInput.split('-');
-    return partes[2] + '/' + partes[1] + '/' + partes[0];
-}
-
-// Mejora de formatearHoraCliente para detectar URLs de Drive
-function formatearHoraCliente(valor) {
-    if (!valor || valor === '' || valor === '-') return '-';
-    // Si es una URL de Drive, mostrar enlace
-    if (valor.includes('drive.google.com')) {
-        return '<a href="' + valor + '" target="_blank" style="color: #007bff;">📷 Ver foto</a>';
-    }
-    // Si ya está formateada (HH:mm:ss)
-    if (/^\d{2}:\d{2}:\d{2}$/.test(valor)) return valor;
-    // Si es fecha tipo "Sat Dec 30 1899..."
-    try {
-        const fecha = new Date(valor);
-        if (isNaN(fecha.getTime())) return valor;
-        return String(fecha.getHours()).padStart(2, '0') + ':' + 
-               String(fecha.getMinutes()).padStart(2, '0') + ':' + 
-               String(fecha.getSeconds()).padStart(2, '0');
-    } catch (e) { return valor; }
-}
         async function cargarMiRegistro() {
             const contenedor = document.getElementById('mi-registro-hoy');
             contenedor.innerHTML = '<p class="loading">Cargando...</p>';
