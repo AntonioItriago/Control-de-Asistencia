@@ -175,13 +175,15 @@
                 <button class="btn-cambiar-pass-admin" onclick="mostrarModalCambiarPassAdmin()">🔑 Cambiar mi Contraseña</button>
             </div>
             <div class="grid-2">
-                <div class="form-group"><label>Usuario:</label><input type="text" id="emp-usuario" placeholder="usuario123" autocomplete="off"></div>
-                <div class="form-group"><label>Password:</label><input type="text" id="emp-password" placeholder="contraseña" autocomplete="new-password"></div>
-                <div class="form-group"><label>Nombre y Apellido:</label><input type="text" id="emp-nombre" placeholder="Juan Pérez"></div>
-                <div class="form-group"><label>Área:</label><input type="text" id="emp-area" placeholder="Ventas"></div>
-                <div class="form-group"><label>Cargo:</label><input type="text" id="emp-cargo" placeholder="Vendedor"></div>
-                <div class="form-group"><label>Perfil:</label><select id="emp-perfil"><option value="usuario">Usuario</option><option value="admin">Administrador</option></select></div>
-            </div>
+    <div class="form-group"><label>Usuario:</label><input type="text" id="emp-usuario" placeholder="usuario123" autocomplete="off"></div>
+    <div class="form-group"><label>Password:</label><input type="text" id="emp-password" placeholder="contraseña" autocomplete="new-password"></div>
+    <div class="form-group"><label>Nombre y Apellido:</label><input type="text" id="emp-nombre" placeholder="Juan Pérez"></div>
+    <div class="form-group"><label>Área:</label><input type="text" id="emp-area" placeholder="Ventas"></div>
+    <div class="form-group"><label>Cargo:</label><input type="text" id="emp-cargo" placeholder="Vendedor"></div>
+    <div class="form-group"><label>Perfil:</label><select id="emp-perfil"><option value="usuario">Usuario</option><option value="admin">Administrador</option></select></div>
+    <div class="form-group"><label>📱 Celular:</label><input type="tel" id="emp-celular" placeholder="0414-1234567" autocomplete="off"></div>
+    <div class="form-group"><label>📧 Correo:</label><input type="email" id="emp-correo" placeholder="juan@empresa.com" autocomplete="off"></div>
+</div>
             <button class="btn-success" onclick="crearEmpleado()">💾 Guardar Empleado</button>
             <p id="msg-crear" class="exito"></p>
             <h3>📋 Lista de Empleados</h3>
@@ -576,45 +578,86 @@
 
         // ==================== CRUD EMPLEADOS ====================
         async function crearEmpleado() {
-            const data = {
-                accion: 'crear_empleado',
-                usuario: document.getElementById('emp-usuario').value.trim(),
-                password: document.getElementById('emp-password').value.trim(),
-                nombre: document.getElementById('emp-nombre').value.trim(),
-                area: document.getElementById('emp-area').value.trim(),
-                cargo: document.getElementById('emp-cargo').value.trim(),
-                perfil: document.getElementById('emp-perfil').value
-            };
-            const msg = document.getElementById('msg-crear');
-            if (!data.usuario || !data.password || !data.nombre) { msg.innerText = '❌ Usuario, Password y Nombre son obligatorios'; msg.style.color = 'red'; return; }
-            msg.innerText = '⏳ Guardando...'; msg.style.color = 'blue';
-            try {
-                const res = await llamarAppsScript(data);
-                if (res.exito) {
-                    msg.innerText = '✅ ' + res.mensaje; msg.style.color = 'green';
-                    document.getElementById('emp-usuario').value = '';
-                    document.getElementById('emp-password').value = '';
-                    document.getElementById('emp-nombre').value = '';
-                    document.getElementById('emp-area').value = '';
-                    document.getElementById('emp-cargo').value = '';
-                } else { msg.innerText = '❌ ' + res.mensaje; msg.style.color = 'red'; }
-            } catch (error) { msg.innerText = '❌ Error de conexión'; msg.style.color = 'red'; }
+    const data = {
+        accion: 'crear_empleado',
+        usuario: document.getElementById('emp-usuario').value.trim(),
+        password: document.getElementById('emp-password').value.trim(),
+        nombre: document.getElementById('emp-nombre').value.trim(),
+        area: document.getElementById('emp-area').value.trim(),
+        cargo: document.getElementById('emp-cargo').value.trim(),
+        perfil: document.getElementById('emp-perfil').value,
+        celular: document.getElementById('emp-celular').value.trim(),
+        correo: document.getElementById('emp-correo').value.trim()
+    };
+    const msg = document.getElementById('msg-crear');
+    if (!data.usuario || !data.password || !data.nombre) {
+        msg.innerText = '❌ Usuario, Password y Nombre son obligatorios';
+        msg.style.color = 'red';
+        return;
+    }
+    // Validar correo
+    if (data.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.correo)) {
+        msg.innerText = '❌ Correo electrónico no válido';
+        msg.style.color = 'red';
+        return;
+    }
+    // Validar celular (solo números, guiones y +, mínimo 7 dígitos)
+    if (data.celular && data.celular.replace(/[^0-9]/g, '').length < 7) {
+        msg.innerText = '❌ Celular no válido (mínimo 7 dígitos)';
+        msg.style.color = 'red';
+        return;
+    }
+    msg.innerText = '⏳ Guardando...';
+    msg.style.color = 'blue';
+    try {
+        const res = await llamarAppsScript(data);
+        if (res.exito) {
+            msg.innerText = '✅ ' + res.mensaje;
+            msg.style.color = 'green';
+            document.getElementById('emp-usuario').value = '';
+            document.getElementById('emp-password').value = '';
+            document.getElementById('emp-nombre').value = '';
+            document.getElementById('emp-area').value = '';
+            document.getElementById('emp-cargo').value = '';
+            document.getElementById('emp-celular').value = '';
+            document.getElementById('emp-correo').value = '';
+        } else {
+            msg.innerText = '❌ ' + res.mensaje;
+            msg.style.color = 'red';
         }
+    } catch (error) {
+        msg.innerText = '❌ Error de conexión';
+        msg.style.color = 'red';
+    }
+}
         async function cargarEmpleados() {
-            const contenedor = document.getElementById('tabla-empleados');
-            contenedor.innerHTML = '<p class="loading">Cargando...</p>';
-            try {
-                const data = await llamarAppsScript({ accion: 'listar_empleados' });
-                if (data.exito && data.empleados && data.empleados.length > 0) {
-                    let html = '<table><thead><tr><th>Usuario</th><th>Nombre</th><th>Área</th><th>Cargo</th><th>Perfil</th><th>Acciones</th></tr></thead><tbody>';
-                    data.empleados.forEach(function(emp) {
-                        html += '<tr><td>' + emp.usuario + '</td><td>' + emp.nombre + '</td><td>' + emp.area + '</td><td>' + emp.cargo + '</td><td><strong>' + emp.perfil + '</strong></td><td><button class="btn-small btn-danger" onclick="eliminarEmpleado(\'' + emp.usuario + '\')">🗑️</button></td></tr>';
-                    });
-                    html += '</tbody></table>';
-                    contenedor.innerHTML = html;
-                } else { contenedor.innerHTML = '<p class="loading">No hay empleados registrados</p>'; }
-            } catch (error) { contenedor.innerHTML = '<p class="error">Error al cargar</p>'; }
+    const contenedor = document.getElementById('tabla-empleados');
+    contenedor.innerHTML = '<p class="loading">Cargando...</p>';
+    try {
+        const data = await llamarAppsScript({ accion: 'listar_empleados' });
+        if (data.exito && data.empleados && data.empleados.length > 0) {
+            let html = '<table><thead><tr><th>Usuario</th><th>Nombre</th><th>Área</th><th>Cargo</th><th>Celular</th><th>Correo</th><th>Perfil</th><th>Acciones</th></tr></thead><tbody>';
+            data.empleados.forEach(function(emp) {
+                html += '<tr>';
+                html += '<td>' + emp.usuario + '</td>';
+                html += '<td>' + emp.nombre + '</td>';
+                html += '<td>' + emp.area + '</td>';
+                html += '<td>' + emp.cargo + '</td>';
+                html += '<td>' + (emp.celular || '-') + '</td>';
+                html += '<td>' + (emp.correo ? '<a href="mailto:' + emp.correo + '">' + emp.correo + '</a>' : '-') + '</td>';
+                html += '<td><strong>' + emp.perfil + '</strong></td>';
+                html += '<td><button class="btn-small btn-danger" onclick="eliminarEmpleado(\'' + emp.usuario + '\')">🗑️</button></td>';
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            contenedor.innerHTML = html;
+        } else {
+            contenedor.innerHTML = '<p class="loading">No hay empleados registrados</p>';
         }
+    } catch (error) {
+        contenedor.innerHTML = '<p class="error">Error al cargar</p>';
+    }
+}
         async function eliminarEmpleado(usuario) {
             if (!confirm('¿Eliminar usuario "' + usuario + '"?')) return;
             try {
