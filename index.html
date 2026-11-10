@@ -646,7 +646,10 @@
                 html += '<td>' + (emp.celular || '-') + '</td>';
                 html += '<td>' + (emp.correo ? '<a href="mailto:' + emp.correo + '">' + emp.correo + '</a>' : '-') + '</td>';
                 html += '<td><strong>' + emp.perfil + '</strong></td>';
-                html += '<td><button class="btn-small btn-danger" onclick="eliminarEmpleado(\'' + emp.usuario + '\')">🗑️</button></td>';
+                html += '<td>';
+                html += '<button class="btn-small btn-warning" onclick="abrirModalEditar(\'' + emp.usuario + '\', \'' + emp.nombre.replace(/'/g, "\\'") + '\', \'' + emp.area.replace(/'/g, "\\'") + '\', \'' + emp.cargo.replace(/'/g, "\\'") + '\', \'' + (emp.celular || '').replace(/'/g, "\\'") + '\', \'' + (emp.correo || '').replace(/'/g, "\\'") + '\')" style="margin-right: 5px;">✏️</button>';
+                html += '<button class="btn-small btn-danger" onclick="eliminarEmpleado(\'' + emp.usuario + '\')">🗑️</button>';
+                html += '</td>';
                 html += '</tr>';
             });
             html += '</tbody></table>';
@@ -666,6 +669,83 @@
                 else { alert('❌ ' + data.mensaje); }
             } catch (error) { alert('❌ Error de conexión'); }
         }
+
+        // Variable global para saber qué empleado se está editando
+let empleadoEditando = null;
+
+function abrirModalEditar(usuario, nombre, area, cargo, celular, correo) {
+    empleadoEditando = usuario;
+    document.getElementById('editar-nombre-display').innerText = nombre;
+    document.getElementById('editar-usuario-display').innerText = usuario;
+    document.getElementById('editar-area').value = area;
+    document.getElementById('editar-cargo').value = cargo;
+    document.getElementById('editar-celular').value = celular;
+    document.getElementById('editar-correo').value = correo;
+    document.getElementById('msg-editar').innerText = '';
+    document.getElementById('modal-editar-empleado').style.display = 'block';
+}
+
+function cerrarModalEditar() {
+    document.getElementById('modal-editar-empleado').style.display = 'none';
+    empleadoEditando = null;
+}
+
+async function guardarEdicionEmpleado() {
+    const area = document.getElementById('editar-area').value.trim();
+    const cargo = document.getElementById('editar-cargo').value.trim();
+    const celular = document.getElementById('editar-celular').value.trim();
+    const correo = document.getElementById('editar-correo').value.trim();
+    const msg = document.getElementById('msg-editar');
+
+    if (!empleadoEditando) {
+        msg.innerText = '❌ Error: no hay empleado seleccionado';
+        msg.style.color = 'red';
+        return;
+    }
+
+    // Validar correo si se proporcionó
+    if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+        msg.innerText = '❌ Correo electrónico no válido';
+        msg.style.color = 'red';
+        return;
+    }
+
+    // Validar celular
+    if (celular && celular.replace(/[^0-9]/g, '').length < 7) {
+        msg.innerText = '❌ Celular no válido (mínimo 7 dígitos)';
+        msg.style.color = 'red';
+        return;
+    }
+
+    msg.innerText = '⏳ Guardando...';
+    msg.style.color = 'blue';
+
+    try {
+        const data = await llamarAppsScript({
+            accion: 'editar_empleado',
+            usuario: empleadoEditando,
+            area: area,
+            cargo: cargo,
+            celular: celular,
+            correo: correo
+        });
+
+        if (data.exito) {
+            msg.innerText = '✅ ' + data.mensaje;
+            msg.style.color = 'green';
+            setTimeout(function() {
+                cerrarModalEditar();
+                cargarEmpleados(); // Recargar la lista
+            }, 1000);
+        } else {
+            msg.innerText = '❌ ' + data.mensaje;
+            msg.style.color = 'red';
+        }
+    } catch (error) {
+        msg.innerText = '❌ Error de conexión';
+        msg.style.color = 'red';
+    }
+}
 
         // ==================== ASISTENCIAS CON FILTROS ====================
         async function cargarAsistencias(recargar) {
@@ -885,6 +965,37 @@ window.addEventListener('click', function(e) {
         <h3 id="detalle-titulo">📍 Detalle del Registro</h3>
         <div id="detalle-contenido"></div>
         <button onclick="cerrarModalDetalle()" class="btn-cerrar-detalle">❌ Cerrar</button>
+    </div>
+</div>
+<!-- MODAL EDITAR EMPLEADO -->
+<div id="modal-editar-empleado" class="modal">
+    <div class="modal-content">
+        <h3>✏️ Editar Empleado</h3>
+        <div class="info-box" style="background: #fff3cd; font-size: 13px;">
+            Editando: <strong id="editar-nombre-display"></strong> 
+            (<span id="editar-usuario-display"></span>)
+        </div>
+        <div class="form-group">
+            <label>Área:</label>
+            <input type="text" id="editar-area" placeholder="Ventas">
+        </div>
+        <div class="form-group">
+            <label>Cargo:</label>
+            <input type="text" id="editar-cargo" placeholder="Vendedor">
+        </div>
+        <div class="form-group">
+            <label>📱 Celular:</label>
+            <input type="tel" id="editar-celular" placeholder="0414-1234567">
+        </div>
+        <div class="form-group">
+            <label>📧 Correo:</label>
+            <input type="email" id="editar-correo" placeholder="juan@empresa.com">
+        </div>
+        <p id="msg-editar" class="error"></p>
+        <div class="modal-buttons">
+            <button onclick="guardarEdicionEmpleado()" class="btn-success">💾 Guardar Cambios</button>
+            <button onclick="cerrarModalEditar()" class="btn-secondary">❌ Cancelar</button>
+        </div>
     </div>
 </div>
 </body>
