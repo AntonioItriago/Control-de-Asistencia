@@ -1,12 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<style>
-    #mapa-empresa { height: 350px; width: 100%; border-radius: 8px; border: 2px solid #ddd; margin-top: 10px; }
-    .mapa-info { background: #e7f1ff; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 13px; }
-    .coordenadas-display { font-family: monospace; background: #f8f9fa; padding: 5px 10px; border-radius: 4px; display: inline-block; }
-</style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Asistencia</title>
@@ -16,6 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon.png">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
@@ -24,8 +19,8 @@
         h3 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin: 25px 0 15px 0; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: 600; color: #333; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
-        input:focus, select:focus { outline: none; border-color: #007bff; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; font-family: inherit; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #007bff; }
         button { width: 100%; padding: 14px; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 10px; transition: background 0.3s; }
         button:hover { background-color: #0056b3; }
         button:disabled { background-color: #ccc; cursor: not-allowed; }
@@ -34,8 +29,10 @@
         .btn-success { background-color: #28a745; }
         .btn-success:hover { background-color: #218838; }
         .btn-warning { background-color: #ffc107; color: #000; }
+        .btn-warning:hover { background-color: #e0a800; }
         .btn-info { background-color: #17a2b8; }
         .btn-danger { background-color: #dc3545; }
+        .btn-danger:hover { background-color: #c82333; }
         .btn-install { background-color: #6f42c1; margin-bottom: 20px; }
         .pantalla { display: none; }
         .pantalla.activa { display: block; }
@@ -82,42 +79,38 @@
         #video { width: 100%; max-width: 400px; border-radius: 8px; }
         #canvas { display: none; }
         #foto-preview { width: 100%; max-width: 400px; border-radius: 8px; margin-top: 10px; }
-
-        /* Filtros admin */
         .filtros-container { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
-        .filtros-container select,
-        .filtros-container input[type="date"] { padding: 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; width: 100%; }
+        .filtros-container select, .filtros-container input[type="date"] { padding: 10px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; width: 100%; }
         .filtros-container label { font-size: 13px; color: #555; }
-
-        /* Control por dispositivo */
         .vista-solo-movil { display: block; }
         .vista-oculta-movil { display: block; }
-        .vista-tablet .vista-solo-movil,
-        .vista-pc .vista-solo-movil { display: none !important; }
+        .vista-tablet .vista-solo-movil, .vista-pc .vista-solo-movil { display: none !important; }
         .vista-movil .vista-oculta-movil { display: none !important; }
         .alerta-dispositivo { display: none; background: #fff3cd; padding: 10px; border-radius: 6px; margin: 15px 0; font-size: 13px; color: #856404; text-align: center; }
-        .vista-tablet .alerta-dispositivo,
-        .vista-pc .alerta-dispositivo { display: block !important; }
+        .vista-tablet .alerta-dispositivo, .vista-pc .alerta-dispositivo { display: block !important; }
         .vista-movil .grid-4 { grid-template-columns: 1fr 1fr; }
-        /* Modal de detalle de registro */
-.modal-detalle { display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); overflow-y: auto; }
-.modal-detalle-content { background: white; margin: 5% auto; padding: 20px; border-radius: 10px; width: 90%; max-width: 500px; text-align: center; }
-.modal-detalle-content h3 { color: #007bff; margin-bottom: 15px; }
-.detalle-info { background: #f8f9fa; padding: 12px; border-radius: 6px; margin: 10px 0; text-align: left; }
-.detalle-info strong { color: #333; }
-.detalle-info a { color: #007bff; text-decoration: none; word-break: break-all; }
-.detalle-info a:hover { text-decoration: underline; }
-.detalle-foto { max-width: 100%; border-radius: 8px; margin-top: 10px; border: 2px solid #ddd; }
-.hora-link { color: #007bff; cursor: pointer; text-decoration: underline; font-weight: 600; }
-.hora-link:hover { color: #0056b3; }
-.btn-cerrar-detalle { background: #6c757d; margin-top: 15px; }
+        .hora-link { color: #007bff; cursor: pointer; text-decoration: underline; font-weight: 600; }
+        .hora-link:hover { color: #0056b3; }
+        .modal-detalle { display: none; position: fixed; z-index: 1001; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); overflow-y: auto; }
+        .modal-detalle-content { background: white; margin: 5% auto; padding: 20px; border-radius: 10px; width: 90%; max-width: 500px; text-align: center; }
+        .modal-detalle-content h3 { color: #007bff; margin-bottom: 15px; }
+        .detalle-info { background: #f8f9fa; padding: 12px; border-radius: 6px; margin: 10px 0; text-align: left; }
+        .detalle-info strong { color: #333; }
+        .detalle-info a { color: #007bff; text-decoration: none; word-break: break-all; }
+        .detalle-info a:hover { text-decoration: underline; }
+        .detalle-foto { max-width: 100%; border-radius: 8px; margin-top: 10px; border: 2px solid #ddd; }
+        .btn-cerrar-detalle { background: #6c757d; margin-top: 15px; }
+        #mapa-empresa { height: 350px; width: 100%; border-radius: 8px; border: 2px solid #ddd; margin-top: 10px; }
+        .mapa-info { background: #e7f1ff; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 13px; }
+        .login-slogan { text-align: center; font-style: italic; color: #666; margin-bottom: 20px; font-size: 14px; min-height: 20px; }
     </style>
 </head>
 <body>
     <div class="container" id="main-container">
         <!-- LOGIN -->
         <div id="pantalla-login" class="pantalla activa login-container">
-            <h2>🕐 Control de Asistencia</h2>
+            <h2 id="login-titulo">🕐 Control de Asistencia</h2>
+            <div id="login-slogan" class="login-slogan"></div>
             <div class="form-group">
                 <label for="usuario">Usuario:</label>
                 <input type="text" id="usuario" placeholder="usuario" autocomplete="off">
@@ -136,7 +129,10 @@
         <!-- PANEL USUARIO -->
         <div id="pantalla-usuario" class="pantalla">
             <h2>👤 Panel de Empleado</h2>
-            <div class="info-box">Bienvenido, <strong id="nombre-user"></strong></div>
+            <div class="info-box">
+                Bienvenido, <strong id="nombre-user"></strong>
+                <div id="user-slogan" style="font-style: italic; color: #666; font-size: 13px; margin-top: 5px;"></div>
+            </div>
             <button id="btn-instalar" class="btn-install" style="display: none;" onclick="instalarApp()">📱 Instalar Aplicación en este dispositivo</button>
             <div class="titulo-con-boton">
                 <h3>📍 Registrar Jornada</h3>
@@ -181,28 +177,28 @@
                 <button class="btn-cambiar-pass-admin" onclick="mostrarModalCambiarPassAdmin()">🔑 Cambiar mi Contraseña</button>
             </div>
             <div class="grid-2">
-    <div class="form-group"><label>Usuario:</label><input type="text" id="emp-usuario" placeholder="usuario123" autocomplete="off"></div>
-    <div class="form-group"><label>Password:</label><input type="text" id="emp-password" placeholder="contraseña" autocomplete="new-password"></div>
-    <div class="form-group"><label>Nombre y Apellido:</label><input type="text" id="emp-nombre" placeholder="Juan Pérez"></div>
-    <div class="form-group"><label>Área:</label><input type="text" id="emp-area" placeholder="Ventas"></div>
-    <div class="form-group"><label>Cargo:</label><input type="text" id="emp-cargo" placeholder="Vendedor"></div>
-    <div class="form-group"><label>Perfil:</label><select id="emp-perfil"><option value="usuario">Usuario</option><option value="admin">Administrador</option></select></div>
-    <div class="form-group"><label>📱 Celular:</label><input type="tel" id="emp-celular" placeholder="0414-1234567" autocomplete="off"></div>
-    <div class="form-group"><label>📧 Correo:</label><input type="email" id="emp-correo" placeholder="juan@empresa.com" autocomplete="off"></div>
-</div>
+                <div class="form-group"><label>Usuario:</label><input type="text" id="emp-usuario" placeholder="usuario123" autocomplete="off"></div>
+                <div class="form-group"><label>Password:</label><input type="text" id="emp-password" placeholder="contraseña" autocomplete="new-password"></div>
+                <div class="form-group"><label>Nombre y Apellido:</label><input type="text" id="emp-nombre" placeholder="Juan Pérez"></div>
+                <div class="form-group"><label>Área:</label><input type="text" id="emp-area" placeholder="Ventas"></div>
+                <div class="form-group"><label>Cargo:</label><input type="text" id="emp-cargo" placeholder="Vendedor"></div>
+                <div class="form-group"><label>Perfil:</label><select id="emp-perfil"><option value="usuario">Usuario</option><option value="admin">Administrador</option></select></div>
+                <div class="form-group"><label>📱 Celular:</label><input type="tel" id="emp-celular" placeholder="0414-1234567" autocomplete="off"></div>
+                <div class="form-group"><label>📧 Correo:</label><input type="email" id="emp-correo" placeholder="juan@empresa.com" autocomplete="off"></div>
+            </div>
             <button class="btn-success" onclick="crearEmpleado()">💾 Guardar Empleado</button>
             <p id="msg-crear" class="exito"></p>
+
             <h3>📋 Lista de Empleados</h3>
             <button onclick="cargarEmpleados()">🔄 Actualizar Lista</button>
             <div id="tabla-empleados"><p class="loading">Haz clic en "Actualizar Lista" para cargar</p></div>
+
             <h3>📊 Registros de Asistencia</h3>
             <div class="filtros-container">
                 <div class="grid-2">
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label>👤 Trabajador:</label>
-                        <select id="filtro-trabajador">
-                            <option value="todos">Todos los trabajadores</option>
-                        </select>
+                        <select id="filtro-trabajador"><option value="todos">Todos los trabajadores</option></select>
                     </div>
                     <div class="form-group" style="margin-bottom: 10px;">
                         <label>📅 Fecha desde:</label>
@@ -219,60 +215,32 @@
             </div>
             <button onclick="cargarAsistencias(true)" style="margin-bottom: 10px;">🔄 Cargar Todos los Registros</button>
             <div id="tabla-asistencias"><p class="loading">Haz clic en "Cargar Registros" para ver</p></div>
+
+            <h3>🏢 Datos de la Empresa</h3>
+            <button onclick="cargarDatosEmpresa()" style="margin-bottom: 10px;">🔄 Cargar datos actuales</button>
+            <div class="grid-2">
+                <div class="form-group"><label>🏢 Nombre de la Empresa:</label><input type="text" id="empresa-nombre" placeholder="Mi Empresa S.A."></div>
+                <div class="form-group"><label>📍 Dirección:</label><input type="text" id="empresa-direccion" placeholder="Av. Principal, Centro"></div>
+            </div>
+            <div class="form-group">
+                <label>💬 Slogan o Nota (se mostrará en la app):</label>
+                <textarea id="empresa-slogan" placeholder="Tu éxito es nuestro compromiso" style="min-height: 80px; resize: vertical;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>🗺️ Ubicación de la Empresa:</label>
+                <button type="button" onclick="usarMiUbicacionActual()" class="btn-info" style="margin-bottom: 10px;">📍 Usar mi ubicación actual</button>
+                <div class="grid-2">
+                    <div class="form-group"><label>Latitud:</label><input type="number" step="any" id="empresa-latitud" placeholder="10.1549732" onchange="actualizarMapaManual()"></div>
+                    <div class="form-group"><label>Longitud:</label><input type="number" step="any" id="empresa-longitud" placeholder="-64.6848183" onchange="actualizarMapaManual()"></div>
+                </div>
+                <div id="mapa-empresa"></div>
+                <div class="mapa-info">💡 <strong>Instrucciones:</strong> Arrastra el marcador rojo para ajustar la ubicación exacta. También puedes hacer clic en cualquier parte del mapa para mover el marcador. Usa la rueda del mouse para hacer zoom.</div>
+            </div>
+            <button onclick="guardarDatosEmpresa()" class="btn-success" style="margin-top: 15px;">💾 Guardar Datos de la Empresa</button>
+            <p id="msg-empresa" class="exito"></p>
+
             <button class="btn-secondary" onclick="cerrarSesion()">Cerrar Sesión</button>
         </div>
-
-<!-- PANEL DE EMPRESA -->
-<h3>🏢 Datos de la Empresa</h3>
-<button onclick="cargarDatosEmpresa()" style="margin-bottom: 10px;">🔄 Cargar datos actuales</button>
-
-<div class="grid-2">
-    <div class="form-group">
-        <label>🏢 Nombre de la Empresa:</label>
-        <input type="text" id="emp-nombre" placeholder="Mi Empresa S.A.">
-    </div>
-    <div class="form-group">
-        <label>📍 Dirección:</label>
-        <input type="text" id="emp-direccion" placeholder="Av. Principal, Centro">
-    </div>
-</div>
-
-<div class="form-group">
-    <label>💬 Slogan o Nota (se mostrará en la app):</label>
-    <textarea id="emp-slogan" placeholder="Tu éxito es nuestro compromiso" 
-              style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
-</div>
-
-<div class="form-group">
-    <label>🗺️ Ubicación de la Empresa:</label>
-    <button type="button" onclick="usarMiUbicacionActual()" class="btn-info" style="margin-bottom: 10px;">
-        📍 Usar mi ubicación actual
-    </button>
-    
-    <div class="grid-2">
-        <div class="form-group">
-            <label>Latitud:</label>
-            <input type="number" step="any" id="emp-latitud" placeholder="10.1549732" onchange="actualizarMapaManual()">
-        </div>
-        <div class="form-group">
-            <label>Longitud:</label>
-            <input type="number" step="any" id="emp-longitud" placeholder="-64.6848183" onchange="actualizarMapaManual()">
-        </div>
-    </div>
-    
-    <!-- Mapa interactivo -->
-    <div id="mapa-empresa"></div>
-    <div class="mapa-info">
-        💡 <strong>Instrucciones:</strong> Arrastra el marcador rojo para ajustar la ubicación exacta. 
-        También puedes hacer clic en cualquier parte del mapa para mover el marcador.
-        Usa la rueda del mouse para hacer zoom.
-    </div>
-</div>
-
-<button onclick="guardarDatosEmpresa()" class="btn-success" style="margin-top: 15px;">
-    💾 Guardar Datos de la Empresa
-</button>
-<p id="msg-empresa" class="exito"></p>
 
         <!-- MODAL CAMBIAR CONTRASEÑA ADMIN -->
         <div id="modal-cambiar-pass-admin" class="modal">
@@ -305,6 +273,23 @@
             </div>
         </div>
 
+        <!-- MODAL EDITAR EMPLEADO -->
+        <div id="modal-editar-empleado" class="modal">
+            <div class="modal-content">
+                <h3>✏️ Editar Empleado</h3>
+                <div class="info-box" style="background: #fff3cd; font-size: 13px;">Editando: <strong id="editar-nombre-display"></strong> (<span id="editar-usuario-display"></span>)</div>
+                <div class="form-group"><label>Área:</label><input type="text" id="editar-area" placeholder="Ventas"></div>
+                <div class="form-group"><label>Cargo:</label><input type="text" id="editar-cargo" placeholder="Vendedor"></div>
+                <div class="form-group"><label>📱 Celular:</label><input type="tel" id="editar-celular" placeholder="0414-1234567"></div>
+                <div class="form-group"><label>📧 Correo:</label><input type="email" id="editar-correo" placeholder="juan@empresa.com"></div>
+                <p id="msg-editar" class="error"></p>
+                <div class="modal-buttons">
+                    <button onclick="guardarEdicionEmpleado()" class="btn-success">💾 Guardar Cambios</button>
+                    <button onclick="cerrarModalEditar()" class="btn-secondary">❌ Cancelar</button>
+                </div>
+            </div>
+        </div>
+
         <!-- MODAL CÁMARA -->
         <div id="modal-camara" class="modal">
             <div class="modal-content">
@@ -322,10 +307,19 @@
                 </div>
             </div>
         </div>
+
+        <!-- MODAL DETALLE GPS/FOTO -->
+        <div id="modal-detalle" class="modal-detalle">
+            <div class="modal-detalle-content">
+                <h3 id="detalle-titulo">📍 Detalle del Registro</h3>
+                <div id="detalle-contenido"></div>
+                <button onclick="cerrarModalDetalle()" class="btn-cerrar-detalle">❌ Cerrar</button>
+            </div>
+        </div>
     </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // ⚠️ REEMPLAZA CON TU URL REAL DE APPS SCRIPT
         const URL_APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbwg_8GJMiRL8YFvvF179O7areWnQtQCL209yIckoTzYaM4lmimbMr2nYlEo4VnW9Fc/exec";
 
         let usuarioActual = null;
@@ -336,6 +330,10 @@
         let tipoRegistroActual = null;
         let coordenadasGPS = null;
         let todosLosRegistros = [];
+        let empleadoEditando = null;
+        let mapaEmpresa = null;
+        let marcadorEmpresa = null;
+        let infoEmpresaGlobal = null;
 
         // ==================== DETECCIÓN DE DISPOSITIVO ====================
         function detectarDispositivo() {
@@ -353,14 +351,13 @@
             document.body.classList.add('vista-' + dispositivo);
             console.log('Dispositivo detectado:', dispositivo);
         }
-        window.addEventListener('DOMContentLoaded', aplicarVistaPorDispositivo);
-        window.addEventListener('resize', aplicarVistaPorDispositivo);
 
         // ==================== PWA ====================
         window.addEventListener('beforeinstallprompt', function(e) {
             e.preventDefault();
             deferredPrompt = e;
-            document.getElementById('btn-instalar').style.display = 'block';
+            var btn = document.getElementById('btn-instalar');
+            if (btn) btn.style.display = 'block';
         });
         async function instalarApp() {
             if (!deferredPrompt) { alert('La instalación no está disponible.'); return; }
@@ -409,15 +406,41 @@
         }
         function formatearHoraCliente(valor) {
             if (!valor || valor === '' || valor === '-') return '-';
-            if (valor.includes && valor.includes('drive.google.com')) {
+            if (typeof valor === 'string' && valor.indexOf('drive.google.com') !== -1) {
                 return '<a href="' + valor + '" target="_blank" style="color: #007bff;">📷 Ver foto</a>';
             }
             if (/^\d{2}:\d{2}:\d{2}$/.test(valor)) return valor;
             try {
-                const fecha = new Date(valor);
+                var fecha = new Date(valor);
                 if (isNaN(fecha.getTime())) return valor;
                 return String(fecha.getHours()).padStart(2, '0') + ':' + String(fecha.getMinutes()).padStart(2, '0') + ':' + String(fecha.getSeconds()).padStart(2, '0');
             } catch (e) { return valor; }
+        }
+
+        // ==================== INFO EMPRESA EN LOGIN ====================
+        async function cargarInfoEmpresaLogin() {
+            try {
+                var data = await llamarAppsScript({ accion: 'obtener_empresa' });
+                if (data.exito && data.empresa) {
+                    infoEmpresaGlobal = data.empresa;
+                    if (data.empresa.nombre) {
+                        document.getElementById('login-titulo').innerText = '🏢 ' + data.empresa.nombre;
+                    }
+                    if (data.empresa.slogan) {
+                        document.getElementById('login-slogan').innerText = '"' + data.empresa.slogan + '"';
+                    }
+                }
+            } catch (error) {
+                console.error('Error al cargar info empresa:', error);
+            }
+        }
+
+        function mostrarInfoEmpresaEnPanel() {
+            if (!infoEmpresaGlobal) return;
+            var sloganDiv = document.getElementById('user-slogan');
+            if (sloganDiv && infoEmpresaGlobal.slogan) {
+                sloganDiv.innerText = '"' + infoEmpresaGlobal.slogan + '"';
+            }
         }
 
         // ==================== GPS ====================
@@ -427,7 +450,7 @@
                 navigator.geolocation.getCurrentPosition(
                     function(position) { resolve({ lat: position.coords.latitude, lng: position.coords.longitude, precision: position.coords.accuracy }); },
                     function(error) {
-                        let mensaje = '❌ Error al obtener ubicación.';
+                        var mensaje = '❌ Error al obtener ubicación.';
                         if (error.code === error.PERMISSION_DENIED) mensaje = '❌ Debes autorizar el GPS.';
                         else if (error.code === error.POSITION_UNAVAILABLE) mensaje = '⚠️ Ubicación no disponible.';
                         else if (error.code === error.TIMEOUT) mensaje = '⏱️ Tiempo agotado.';
@@ -442,7 +465,7 @@
         async function iniciarCamara() {
             try {
                 streamCamara = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
-                const video = document.getElementById('video');
+                var video = document.getElementById('video');
                 video.srcObject = streamCamara;
                 document.getElementById('modal-camara').style.display = 'block';
                 document.getElementById('btn-capturar').style.display = 'block';
@@ -454,8 +477,8 @@
             }
         }
         function capturarFoto() {
-            const video = document.getElementById('video');
-            const canvas = document.getElementById('canvas');
+            var video = document.getElementById('video');
+            var canvas = document.getElementById('canvas');
             canvas.width = video.videoWidth; canvas.height = video.videoHeight;
             canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
             fotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
@@ -481,7 +504,7 @@
         // ==================== REGISTRO ====================
         async function iniciarRegistro(tipo) {
             tipoRegistroActual = tipo; fotoBase64 = null; coordenadasGPS = null;
-            const msg = document.getElementById('msg-user');
+            var msg = document.getElementById('msg-user');
             msg.innerText = '📍 Obteniendo ubicación GPS...'; msg.style.color = 'blue';
             try {
                 coordenadasGPS = await obtenerGPS();
@@ -494,10 +517,10 @@
             }
         }
         async function procesarRegistroConDatos() {
-            const msg = document.getElementById('msg-user');
+            var msg = document.getElementById('msg-user');
             msg.innerText = '⏳ Registrando...'; msg.style.color = 'blue';
             try {
-                const data = await llamarAppsScript({
+                var data = await llamarAppsScript({
                     accion: 'registrar_asistencia', usuario: usuarioActual, nombre: nombreUsuarioActual,
                     tipo: tipoRegistroActual, lat: coordenadasGPS.lat, lng: coordenadasGPS.lng,
                     precision: coordenadasGPS.precision, foto: fotoBase64 || ''
@@ -509,55 +532,32 @@
 
         // ==================== LOGIN ====================
         async function iniciarSesion() {
-            const user = document.getElementById('usuario').value.trim();
-            const pass = document.getElementById('password').value.trim();
-            const btn = document.getElementById('btn-login');
-            const msg = document.getElementById('msg-login');
+            var user = document.getElementById('usuario').value.trim();
+            var pass = document.getElementById('password').value.trim();
+            var btn = document.getElementById('btn-login');
+            var msg = document.getElementById('msg-login');
             if (!user || !pass) { msg.innerText = 'Completa todos los campos'; return; }
             btn.innerText = 'Conectando...'; btn.disabled = true; msg.innerText = '';
             try {
-                const data = await llamarAppsScript({ accion: 'login', usuario: user, password: pass });
+                var data = await llamarAppsScript({ accion: 'login', usuario: user, password: pass });
                 if (data.exito) {
                     usuarioActual = user; nombreUsuarioActual = data.nombre || user;
                     document.getElementById('pantalla-login').classList.remove('activa');
                     document.getElementById('main-container').classList.remove('login-container');
-                    const rol = String(data.rol).toLowerCase().trim();
+                    var rol = String(data.rol).toLowerCase().trim();
                     if (rol === 'admin' || rol === 'administrador') {
                         document.getElementById('nombre-admin').innerText = data.nombre || user;
                         document.getElementById('pantalla-admin').classList.add('activa');
+                        setTimeout(function() { if (mapaEmpresa) mapaEmpresa.invalidateSize(); }, 300);
                     } else {
                         document.getElementById('nombre-user').innerText = data.nombre || user;
                         document.getElementById('pantalla-usuario').classList.add('activa');
+                        mostrarInfoEmpresaEnPanel();
                     }
                 } else { msg.innerText = data.mensaje || 'Error de Acceso'; }
             } catch (error) { msg.innerText = 'Error de conexión con el servidor'; }
             finally { btn.innerText = 'Ingresar'; btn.disabled = false; }
-            // Dentro de iniciarSesion(), después de mostrar el panel correspondiente:
-cargarInfoEmpresa();
         }
-
-        async function cargarInfoEmpresa() {
-    try {
-        const data = await llamarAppsScript({ accion: 'obtener_empresa' });
-        if (data.exito && data.empresa && data.empresa.nombre) {
-            // Mostrar en el título de la app
-            const titulos = document.querySelectorAll('h2');
-            if (titulos.length > 0) {
-                titulos[0].innerHTML = '🏢 ' + data.empresa.nombre;
-            }
-            // Mostrar slogan debajo del nombre del usuario
-            const infoBox = document.querySelector('.info-box');
-            if (infoBox && data.empresa.slogan) {
-                const sloganDiv = document.createElement('div');
-                sloganDiv.style.cssText = 'font-style: italic; color: #666; font-size: 13px; margin-top: 5px;';
-                sloganDiv.innerText = '"' + data.empresa.slogan + '"';
-                infoBox.appendChild(sloganDiv);
-            }
-        }
-    } catch (error) {
-        console.error('Error al cargar info empresa:', error);
-    }
-}
 
         // ==================== CAMBIAR CONTRASEÑA USUARIO ====================
         function mostrarModalCambiarPass() {
@@ -569,16 +569,16 @@ cargarInfoEmpresa();
         }
         function cerrarModalCambiarPass() { document.getElementById('modal-cambiar-pass').style.display = 'none'; }
         async function cambiarContrasena() {
-            const pa = document.getElementById('pass-actual').value.trim();
-            const pn = document.getElementById('pass-nueva').value.trim();
-            const pc = document.getElementById('pass-confirmar').value.trim();
-            const msg = document.getElementById('msg-cambiar-pass');
+            var pa = document.getElementById('pass-actual').value.trim();
+            var pn = document.getElementById('pass-nueva').value.trim();
+            var pc = document.getElementById('pass-confirmar').value.trim();
+            var msg = document.getElementById('msg-cambiar-pass');
             if (!pa || !pn || !pc) { msg.innerText = '❌ Todos los campos son obligatorios'; msg.style.color = 'red'; return; }
             if (pn.length < 6) { msg.innerText = '❌ Mínimo 6 caracteres'; msg.style.color = 'red'; return; }
             if (pn !== pc) { msg.innerText = '❌ Las contraseñas no coinciden'; msg.style.color = 'red'; return; }
             msg.innerText = '⏳ Validando...'; msg.style.color = 'blue';
             try {
-                const data = await llamarAppsScript({ accion: 'cambiar_password', usuario: usuarioActual, passwordActual: pa, passwordNueva: pn });
+                var data = await llamarAppsScript({ accion: 'cambiar_password', usuario: usuarioActual, passwordActual: pa, passwordNueva: pn });
                 if (data.exito) {
                     msg.innerText = '✅ ' + data.mensaje; msg.style.color = 'green';
                     setTimeout(function() { cerrarModalCambiarPass(); alert('✅ Contraseña actualizada.'); cerrarSesion(); }, 1500);
@@ -598,7 +598,7 @@ cargarInfoEmpresa();
         }
         function cerrarModalCambiarPassAdmin() { document.getElementById('modal-cambiar-pass-admin').style.display = 'none'; }
         function resetearRequisitos() {
-            const reqs = [
+            var reqs = [
                 { id: 'req-longitud', texto: 'Mínimo 8 caracteres' },
                 { id: 'req-mayus', texto: 'Al menos una MAYÚSCULA' },
                 { id: 'req-minus', texto: 'Al menos una minúscula' },
@@ -606,7 +606,7 @@ cargarInfoEmpresa();
                 { id: 'req-especial', texto: 'Al menos un carácter especial' }
             ];
             reqs.forEach(function(r) {
-                const el = document.getElementById(r.id);
+                var el = document.getElementById(r.id);
                 el.innerText = '❌ ' + r.texto; el.classList.remove('cumplido'); el.classList.add('no-cumplido');
             });
             document.getElementById('barra-fortaleza-fill').style.width = '0%';
@@ -614,22 +614,22 @@ cargarInfoEmpresa();
             document.getElementById('fortaleza-texto').style.color = '#666';
         }
         function validarFortalezaPass() {
-            const pass = document.getElementById('admin-pass-nueva').value;
-            const confirmar = document.getElementById('admin-pass-confirmar').value;
-            const tieneLongitud = pass.length >= 8;
-            const tieneMayus = /[A-Z]/.test(pass);
-            const tieneMinus = /[a-z]/.test(pass);
-            const tieneNumero = /[0-9]/.test(pass);
-            const tieneEspecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pass);
+            var pass = document.getElementById('admin-pass-nueva').value;
+            var confirmar = document.getElementById('admin-pass-confirmar').value;
+            var tieneLongitud = pass.length >= 8;
+            var tieneMayus = /[A-Z]/.test(pass);
+            var tieneMinus = /[a-z]/.test(pass);
+            var tieneNumero = /[0-9]/.test(pass);
+            var tieneEspecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pass);
             actualizarRequisito('req-longitud', tieneLongitud, 'Mínimo 8 caracteres');
             actualizarRequisito('req-mayus', tieneMayus, 'Al menos una MAYÚSCULA');
             actualizarRequisito('req-minus', tieneMinus, 'Al menos una minúscula');
             actualizarRequisito('req-numero', tieneNumero, 'Al menos un número');
             actualizarRequisito('req-especial', tieneEspecial, 'Al menos un carácter especial');
-            const cumplidos = [tieneLongitud, tieneMayus, tieneMinus, tieneNumero, tieneEspecial].filter(function(v) { return v; }).length;
-            const porcentaje = (cumplidos / 5) * 100;
-            const barra = document.getElementById('barra-fortaleza-fill');
-            const texto = document.getElementById('fortaleza-texto');
+            var cumplidos = [tieneLongitud, tieneMayus, tieneMinus, tieneNumero, tieneEspecial].filter(function(v) { return v; }).length;
+            var porcentaje = (cumplidos / 5) * 100;
+            var barra = document.getElementById('barra-fortaleza-fill');
+            var texto = document.getElementById('fortaleza-texto');
             barra.style.width = porcentaje + '%';
             if (cumplidos === 0) { texto.innerText = 'Ingresa una contraseña'; texto.style.color = '#666'; barra.style.background = '#e9ecef'; }
             else if (cumplidos <= 2) { texto.innerText = '🔴 Débil'; texto.style.color = '#dc3545'; barra.style.background = '#dc3545'; }
@@ -638,20 +638,20 @@ cargarInfoEmpresa();
             document.getElementById('btn-guardar-admin').disabled = !((tieneLongitud && tieneMayus && tieneMinus && tieneNumero && tieneEspecial) && pass === confirmar && pass.length > 0);
         }
         function actualizarRequisito(id, cumplido, textoBase) {
-            const el = document.getElementById(id);
+            var el = document.getElementById(id);
             if (cumplido) { el.innerText = '✅ ' + textoBase; el.classList.remove('no-cumplido'); el.classList.add('cumplido'); }
             else { el.innerText = '❌ ' + textoBase; el.classList.remove('cumplido'); el.classList.add('no-cumplido'); }
         }
         async function cambiarContrasenaAdmin() {
-            const pa = document.getElementById('admin-pass-actual').value.trim();
-            const pn = document.getElementById('admin-pass-nueva').value.trim();
-            const pc = document.getElementById('admin-pass-confirmar').value.trim();
-            const msg = document.getElementById('msg-cambiar-pass-admin');
+            var pa = document.getElementById('admin-pass-actual').value.trim();
+            var pn = document.getElementById('admin-pass-nueva').value.trim();
+            var pc = document.getElementById('admin-pass-confirmar').value.trim();
+            var msg = document.getElementById('msg-cambiar-pass-admin');
             if (!pa || !pn || !pc) { msg.innerText = '❌ Todos los campos son obligatorios'; msg.style.color = 'red'; return; }
             if (pn !== pc) { msg.innerText = '❌ Las contraseñas no coinciden'; msg.style.color = 'red'; return; }
             msg.innerText = '⏳ Validando...'; msg.style.color = 'blue';
             try {
-                const data = await llamarAppsScript({ accion: 'cambiar_password', usuario: usuarioActual, passwordActual: pa, passwordNueva: pn });
+                var data = await llamarAppsScript({ accion: 'cambiar_password', usuario: usuarioActual, passwordActual: pa, passwordNueva: pn });
                 if (data.exito) {
                     msg.innerText = '✅ ' + data.mensaje; msg.style.color = 'green';
                     setTimeout(function() { cerrarModalCambiarPassAdmin(); alert('✅ Contraseña actualizada.'); cerrarSesion(); }, 1500);
@@ -661,199 +661,148 @@ cargarInfoEmpresa();
 
         // ==================== CRUD EMPLEADOS ====================
         async function crearEmpleado() {
-    const data = {
-        accion: 'crear_empleado',
-        usuario: document.getElementById('emp-usuario').value.trim(),
-        password: document.getElementById('emp-password').value.trim(),
-        nombre: document.getElementById('emp-nombre').value.trim(),
-        area: document.getElementById('emp-area').value.trim(),
-        cargo: document.getElementById('emp-cargo').value.trim(),
-        perfil: document.getElementById('emp-perfil').value,
-        celular: document.getElementById('emp-celular').value.trim(),
-        correo: document.getElementById('emp-correo').value.trim()
-    };
-    const msg = document.getElementById('msg-crear');
-    if (!data.usuario || !data.password || !data.nombre) {
-        msg.innerText = '❌ Usuario, Password y Nombre son obligatorios';
-        msg.style.color = 'red';
-        return;
-    }
-    // Validar correo
-    if (data.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.correo)) {
-        msg.innerText = '❌ Correo electrónico no válido';
-        msg.style.color = 'red';
-        return;
-    }
-    // Validar celular (solo números, guiones y +, mínimo 7 dígitos)
-    if (data.celular && data.celular.replace(/[^0-9]/g, '').length < 7) {
-        msg.innerText = '❌ Celular no válido (mínimo 7 dígitos)';
-        msg.style.color = 'red';
-        return;
-    }
-    msg.innerText = '⏳ Guardando...';
-    msg.style.color = 'blue';
-    try {
-        const res = await llamarAppsScript(data);
-        if (res.exito) {
-            msg.innerText = '✅ ' + res.mensaje;
-            msg.style.color = 'green';
-            document.getElementById('emp-usuario').value = '';
-            document.getElementById('emp-password').value = '';
-            document.getElementById('emp-nombre').value = '';
-            document.getElementById('emp-area').value = '';
-            document.getElementById('emp-cargo').value = '';
-            document.getElementById('emp-celular').value = '';
-            document.getElementById('emp-correo').value = '';
-        } else {
-            msg.innerText = '❌ ' + res.mensaje;
-            msg.style.color = 'red';
+            var data = {
+                accion: 'crear_empleado',
+                usuario: document.getElementById('emp-usuario').value.trim(),
+                password: document.getElementById('emp-password').value.trim(),
+                nombre: document.getElementById('emp-nombre').value.trim(),
+                area: document.getElementById('emp-area').value.trim(),
+                cargo: document.getElementById('emp-cargo').value.trim(),
+                perfil: document.getElementById('emp-perfil').value,
+                celular: document.getElementById('emp-celular').value.trim(),
+                correo: document.getElementById('emp-correo').value.trim()
+            };
+            var msg = document.getElementById('msg-crear');
+            if (!data.usuario || !data.password || !data.nombre) { msg.innerText = '❌ Usuario, Password y Nombre son obligatorios'; msg.style.color = 'red'; return; }
+            if (data.correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.correo)) { msg.innerText = '❌ Correo no válido'; msg.style.color = 'red'; return; }
+            if (data.celular && data.celular.replace(/[^0-9]/g, '').length < 7) { msg.innerText = '❌ Celular no válido'; msg.style.color = 'red'; return; }
+            msg.innerText = '⏳ Guardando...'; msg.style.color = 'blue';
+            try {
+                var res = await llamarAppsScript(data);
+                if (res.exito) {
+                    msg.innerText = '✅ ' + res.mensaje; msg.style.color = 'green';
+                    document.getElementById('emp-usuario').value = '';
+                    document.getElementById('emp-password').value = '';
+                    document.getElementById('emp-nombre').value = '';
+                    document.getElementById('emp-area').value = '';
+                    document.getElementById('emp-cargo').value = '';
+                    document.getElementById('emp-celular').value = '';
+                    document.getElementById('emp-correo').value = '';
+                } else { msg.innerText = '❌ ' + res.mensaje; msg.style.color = 'red'; }
+            } catch (error) { msg.innerText = '❌ Error de conexión'; msg.style.color = 'red'; }
         }
-    } catch (error) {
-        msg.innerText = '❌ Error de conexión';
-        msg.style.color = 'red';
-    }
-}
+
         async function cargarEmpleados() {
-    const contenedor = document.getElementById('tabla-empleados');
-    contenedor.innerHTML = '<p class="loading">Cargando...</p>';
-    try {
-        const data = await llamarAppsScript({ accion: 'listar_empleados' });
-        if (data.exito && data.empleados && data.empleados.length > 0) {
-            let html = '<table><thead><tr><th>Usuario</th><th>Nombre</th><th>Área</th><th>Cargo</th><th>Celular</th><th>Correo</th><th>Perfil</th><th>Acciones</th></tr></thead><tbody>';
-            data.empleados.forEach(function(emp) {
-                html += '<tr>';
-                html += '<td>' + emp.usuario + '</td>';
-                html += '<td>' + emp.nombre + '</td>';
-                html += '<td>' + emp.area + '</td>';
-                html += '<td>' + emp.cargo + '</td>';
-                html += '<td>' + (emp.celular || '-') + '</td>';
-                html += '<td>' + (emp.correo ? '<a href="mailto:' + emp.correo + '">' + emp.correo + '</a>' : '-') + '</td>';
-                html += '<td><strong>' + emp.perfil + '</strong></td>';
-                html += '<td>';
-                html += '<button class="btn-small btn-warning" onclick="abrirModalEditar(\'' + emp.usuario + '\', \'' + emp.nombre.replace(/'/g, "\\'") + '\', \'' + emp.area.replace(/'/g, "\\'") + '\', \'' + emp.cargo.replace(/'/g, "\\'") + '\', \'' + (emp.celular || '').replace(/'/g, "\\'") + '\', \'' + (emp.correo || '').replace(/'/g, "\\'") + '\')" style="margin-right: 5px;">✏️</button>';
-                html += '<button class="btn-small btn-danger" onclick="eliminarEmpleado(\'' + emp.usuario + '\')">🗑️</button>';
-                html += '</td>';
-                html += '</tr>';
-            });
-            html += '</tbody></table>';
-            contenedor.innerHTML = html;
-        } else {
-            contenedor.innerHTML = '<p class="loading">No hay empleados registrados</p>';
+            var contenedor = document.getElementById('tabla-empleados');
+            contenedor.innerHTML = '<p class="loading">Cargando...</p>';
+            try {
+                var data = await llamarAppsScript({ accion: 'listar_empleados' });
+                if (data.exito && data.empleados && data.empleados.length > 0) {
+                    var html = '<table><thead><tr><th>Usuario</th><th>Nombre</th><th>Área</th><th>Cargo</th><th>Celular</th><th>Correo</th><th>Perfil</th><th>Acciones</th></tr></thead><tbody>';
+                    data.empleados.forEach(function(emp) {
+                        html += '<tr>';
+                        html += '<td>' + emp.usuario + '</td>';
+                        html += '<td>' + emp.nombre + '</td>';
+                        html += '<td>' + emp.area + '</td>';
+                        html += '<td>' + emp.cargo + '</td>';
+                        html += '<td>' + (emp.celular || '-') + '</td>';
+                        html += '<td>' + (emp.correo ? '<a href="mailto:' + emp.correo + '">' + emp.correo + '</a>' : '-') + '</td>';
+                        html += '<td><strong>' + emp.perfil + '</strong></td>';
+                        html += '<td>';
+                        html += '<button class="btn-small btn-warning" onclick="abrirModalEditar(\'' + emp.usuario + '\',\'' + emp.nombre.replace(/'/g, "\\'") + '\',\'' + emp.area.replace(/'/g, "\\'") + '\',\'' + emp.cargo.replace(/'/g, "\\'") + '\',\'' + (emp.celular || '').replace(/'/g, "\\'") + '\',\'' + (emp.correo || '').replace(/'/g, "\\'") + '\')" style="margin-right: 5px;">✏️</button>';
+                        html += '<button class="btn-small btn-danger" onclick="eliminarEmpleado(\'' + emp.usuario + '\')">🗑️</button>';
+                        html += '</td>';
+                        html += '</tr>';
+                    });
+                    html += '</tbody></table>';
+                    contenedor.innerHTML = html;
+                } else { contenedor.innerHTML = '<p class="loading">No hay empleados registrados</p>'; }
+            } catch (error) { contenedor.innerHTML = '<p class="error">Error al cargar</p>'; }
         }
-    } catch (error) {
-        contenedor.innerHTML = '<p class="error">Error al cargar</p>';
-    }
-}
+
         async function eliminarEmpleado(usuario) {
             if (!confirm('¿Eliminar usuario "' + usuario + '"?')) return;
             try {
-                const data = await llamarAppsScript({ accion: 'eliminar_empleado', usuario: usuario });
+                var data = await llamarAppsScript({ accion: 'eliminar_empleado', usuario: usuario });
                 if (data.exito) { alert('✅ ' + data.mensaje); cargarEmpleados(); }
                 else { alert('❌ ' + data.mensaje); }
             } catch (error) { alert('❌ Error de conexión'); }
         }
 
-        // Variable global para saber qué empleado se está editando
-let empleadoEditando = null;
-
-function abrirModalEditar(usuario, nombre, area, cargo, celular, correo) {
-    empleadoEditando = usuario;
-    document.getElementById('editar-nombre-display').innerText = nombre;
-    document.getElementById('editar-usuario-display').innerText = usuario;
-    document.getElementById('editar-area').value = area;
-    document.getElementById('editar-cargo').value = cargo;
-    document.getElementById('editar-celular').value = celular;
-    document.getElementById('editar-correo').value = correo;
-    document.getElementById('msg-editar').innerText = '';
-    document.getElementById('modal-editar-empleado').style.display = 'block';
-}
-
-function cerrarModalEditar() {
-    document.getElementById('modal-editar-empleado').style.display = 'none';
-    empleadoEditando = null;
-}
-
-async function guardarEdicionEmpleado() {
-    const area = document.getElementById('editar-area').value.trim();
-    const cargo = document.getElementById('editar-cargo').value.trim();
-    const celular = document.getElementById('editar-celular').value.trim();
-    const correo = document.getElementById('editar-correo').value.trim();
-    const msg = document.getElementById('msg-editar');
-
-    if (!empleadoEditando) {
-        msg.innerText = '❌ Error: no hay empleado seleccionado';
-        msg.style.color = 'red';
-        return;
-    }
-
-    // Validar correo si se proporcionó
-    if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
-        msg.innerText = '❌ Correo electrónico no válido';
-        msg.style.color = 'red';
-        return;
-    }
-
-    // Validar celular
-    if (celular && celular.replace(/[^0-9]/g, '').length < 7) {
-        msg.innerText = '❌ Celular no válido (mínimo 7 dígitos)';
-        msg.style.color = 'red';
-        return;
-    }
-
-    msg.innerText = '⏳ Guardando...';
-    msg.style.color = 'blue';
-
-    try {
-        const data = await llamarAppsScript({
-            accion: 'editar_empleado',
-            usuario: empleadoEditando,
-            area: area,
-            cargo: cargo,
-            celular: celular,
-            correo: correo
-        });
-
-        if (data.exito) {
-            msg.innerText = '✅ ' + data.mensaje;
-            msg.style.color = 'green';
-            setTimeout(function() {
-                cerrarModalEditar();
-                cargarEmpleados(); // Recargar la lista
-            }, 1000);
-        } else {
-            msg.innerText = '❌ ' + data.mensaje;
-            msg.style.color = 'red';
+        // ==================== EDITAR EMPLEADO ====================
+        function abrirModalEditar(usuario, nombre, area, cargo, celular, correo) {
+            empleadoEditando = usuario;
+            document.getElementById('editar-nombre-display').innerText = nombre;
+            document.getElementById('editar-usuario-display').innerText = usuario;
+            document.getElementById('editar-area').value = area;
+            document.getElementById('editar-cargo').value = cargo;
+            document.getElementById('editar-celular').value = celular;
+            document.getElementById('editar-correo').value = correo;
+            document.getElementById('msg-editar').innerText = '';
+            document.getElementById('modal-editar-empleado').style.display = 'block';
         }
-    } catch (error) {
-        msg.innerText = '❌ Error de conexión';
-        msg.style.color = 'red';
-    }
-}
+        function cerrarModalEditar() {
+            document.getElementById('modal-editar-empleado').style.display = 'none';
+            empleadoEditando = null;
+        }
+        async function guardarEdicionEmpleado() {
+            var area = document.getElementById('editar-area').value.trim();
+            var cargo = document.getElementById('editar-cargo').value.trim();
+            var celular = document.getElementById('editar-celular').value.trim();
+            var correo = document.getElementById('editar-correo').value.trim();
+            var msg = document.getElementById('msg-editar');
+
+            if (!empleadoEditando) { msg.innerText = '❌ Error: no hay empleado seleccionado'; msg.style.color = 'red'; return; }
+            if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { msg.innerText = '❌ Correo electrónico no válido'; msg.style.color = 'red'; return; }
+            if (celular && celular.replace(/[^0-9]/g, '').length < 7) { msg.innerText = '❌ Celular no válido (mínimo 7 dígitos)'; msg.style.color = 'red'; return; }
+
+            msg.innerText = '⏳ Guardando...'; msg.style.color = 'blue';
+
+            try {
+                var data = await llamarAppsScript({
+                    accion: 'editar_empleado',
+                    usuario: empleadoEditando,
+                    area: area, cargo: cargo, celular: celular, correo: correo
+                });
+                if (data.exito) {
+                    msg.innerText = '✅ ' + data.mensaje; msg.style.color = 'green';
+                    setTimeout(function() { cerrarModalEditar(); cargarEmpleados(); }, 1000);
+                } else { msg.innerText = '❌ ' + data.mensaje; msg.style.color = 'red'; }
+            } catch (error) { msg.innerText = '❌ Error de conexión'; msg.style.color = 'red'; }
+        }
 
         // ==================== ASISTENCIAS CON FILTROS ====================
         async function cargarAsistencias(recargar) {
-            const contenedor = document.getElementById('tabla-asistencias');
+            var contenedor = document.getElementById('tabla-asistencias');
             if (todosLosRegistros.length === 0 || recargar) {
                 contenedor.innerHTML = '<p class="loading">Cargando...</p>';
                 try {
-                    const data = await llamarAppsScript({ accion: 'listar_asistencias' });
+                    var data = await llamarAppsScript({ accion: 'listar_asistencias' });
                     if (data.exito && data.registros) {
                         todosLosRegistros = data.registros;
                         poblarSelectorTrabajadores();
                         mostrarRegistrosFiltrados();
                     } else { contenedor.innerHTML = '<p class="loading">No hay registros</p>'; }
                 } catch (error) { contenedor.innerHTML = '<p class="error">Error al cargar</p>'; }
-            } else {
-                mostrarRegistrosFiltrados();
-            }
+            } else { mostrarRegistrosFiltrados(); }
         }
         function poblarSelectorTrabajadores() {
-            const select = document.getElementById('filtro-trabajador');
-            const trabajadores = [...new Set(todosLosRegistros.map(function(r) { return r.usuario; }))];
+            var select = document.getElementById('filtro-trabajador');
+            var trabajadores = [];
+            var vistos = {};
+            todosLosRegistros.forEach(function(r) {
+                if (!vistos[r.usuario]) {
+                    vistos[r.usuario] = true;
+                    trabajadores.push(r.usuario);
+                }
+            });
             select.innerHTML = '<option value="todos">Todos los trabajadores</option>';
             trabajadores.forEach(function(trab) {
-                const nombre = todosLosRegistros.find(function(r) { return r.usuario === trab; }).nombre;
-                const option = document.createElement('option');
+                var nombre = '';
+                for (var i = 0; i < todosLosRegistros.length; i++) {
+                    if (todosLosRegistros[i].usuario === trab) { nombre = todosLosRegistros[i].nombre; break; }
+                }
+                var option = document.createElement('option');
                 option.value = trab;
                 option.textContent = trab + ' - ' + nombre;
                 select.appendChild(option);
@@ -861,158 +810,113 @@ async function guardarEdicionEmpleado() {
         }
         function aplicarFiltros() { mostrarRegistrosFiltrados(); }
         function mostrarRegistrosFiltrados() {
-    const contenedor = document.getElementById('tabla-asistencias');
-    const trabajador = document.getElementById('filtro-trabajador').value;
-    const desde = document.getElementById('filtro-desde').value;
-    const hasta = document.getElementById('filtro-hasta').value;
-    const tsDesde = desde ? fechaATimestamp(desde) : null;
-    const tsHasta = hasta ? fechaATimestamp(hasta) : null;
-    
-    let filtrados = todosLosRegistros.filter(function(r) {
-        if (trabajador !== 'todos' && r.usuario !== trabajador) return false;
-        const ts = fechaATimestamp(r.fechaEntrada);
-        if (tsDesde !== null || tsHasta !== null) {
-            if (ts === null) return false;
-            if (tsDesde !== null && ts < tsDesde) return false;
-            if (tsHasta !== null && ts > tsHasta) return false;
-        }
-        return true;
-    });
-    
-    filtrados.sort(function(a, b) {
-        return (fechaATimestamp(b.fechaEntrada) || 0) - (fechaATimestamp(a.fechaEntrada) || 0);
-    });
-    
-    if (filtrados.length === 0) {
-        contenedor.innerHTML = '<p class="loading">No hay registros con esos filtros</p>';
-        return;
-    }
-    
-    let html = '<table><thead><tr>';
-    html += '<th>Fecha</th><th>Usuario</th><th>Nombre</th>';
-    html += '<th>Entrada</th><th>Comida In</th><th>Comida Out</th><th>Salida</th>';
-    html += '<th>T.Total</th><th>T.Prod</th>';
-    html += '</tr></thead><tbody>';
-    
-    filtrados.forEach(function(reg, idx) {
-        html += '<tr>';
-        html += '<td><strong>' + formatearFechaCliente(reg.fechaEntrada) + '</strong></td>';
-        html += '<td>' + reg.usuario + '</td>';
-        html += '<td>' + reg.nombre + '</td>';
-        html += '<td>' + hacerHoraClickeable(reg.horaEntrada, reg.ubicacionEntrada, reg.fotoEntrada, 'Entrada', idx) + '</td>';
-        html += '<td>' + hacerHoraClickeable(reg.horaIniRef, reg.ubicacionIniRef, '', 'Comida In', idx) + '</td>';
-        html += '<td>' + hacerHoraClickeable(reg.horaFinRef, reg.ubicacionFinRef, '', 'Comida Out', idx) + '</td>';
-        html += '<td>' + hacerHoraClickeable(reg.horaSalida, reg.ubicacionSalida, reg.fotoSalida, 'Salida', idx) + '</td>';
-        html += '<td>' + (reg.tiempoTotal || '-') + '</td>';
-        html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
-        html += '</tr>';
-    });
-    
-    html += '</tbody></table>';
-    html += '<p class="exito">Total: ' + filtrados.length + ' registros</p>';
-    contenedor.innerHTML = html;
-}
-
-// Función auxiliar para hacer las horas clickeables
-function hacerHoraClickeable(hora, ubicacion, foto, tipo, idx) {
-    const horaFormateada = formatearHoraCliente(hora);
-    if (horaFormateada === '-' || horaFormateada.includes('Ver foto')) {
-        return horaFormateada;
-    }
-    // Guardar datos en un atributo data para recuperarlos al hacer clic
-    const datos = encodeURIComponent(JSON.stringify({
-        tipo: tipo,
-        hora: horaFormateada,
-        ubicacion: ubicacion || '',
-        foto: foto || ''
-    }));
-    return '<span class="hora-link" onclick="mostrarDetalle(\'' + datos + '\')">' + horaFormateada + ' 🔍</span>';
-}
-
-// Mostrar modal con GPS y foto
-function mostrarDetalle(datosEncoded) {
-    try {
-        const datos = JSON.parse(decodeURIComponent(datosEncoded));
-        const titulo = document.getElementById('detalle-titulo');
-        const contenido = document.getElementById('detalle-contenido');
-        
-        titulo.innerText = '📍 Detalle: ' + datos.tipo;
-        
-        let html = '<div class="detalle-info">';
-        html += '<p><strong>⏰ Hora:</strong> ' + datos.hora + '</p>';
-        
-        // GPS
-        if (datos.ubicacion && datos.ubicacion !== '' && datos.ubicacion !== '-') {
-            // Parsear coordenadas (formato: "10.1549732, -64.6848183")
-            const coords = datos.ubicacion.split(',');
-            if (coords.length === 2) {
-                const lat = parseFloat(coords[0].trim());
-                const lng = parseFloat(coords[1].trim());
-                if (!isNaN(lat) && !isNaN(lng)) {
-                    const mapsUrl = 'https://www.google.com/maps?q=' + lat + ',' + lng;
-                    html += '<p><strong>📍 Ubicación GPS:</strong></p>';
-                    html += '<p>Lat: ' + lat.toFixed(6) + ', Lng: ' + lng.toFixed(6) + '</p>';
-                    html += '<p><a href="' + mapsUrl + '" target="_blank">🗺️ Ver en Google Maps</a></p>';
-                } else {
-                    html += '<p><strong>📍 Ubicación:</strong> ' + datos.ubicacion + '</p>';
+            var contenedor = document.getElementById('tabla-asistencias');
+            var trabajador = document.getElementById('filtro-trabajador').value;
+            var desde = document.getElementById('filtro-desde').value;
+            var hasta = document.getElementById('filtro-hasta').value;
+            var tsDesde = desde ? fechaATimestamp(desde) : null;
+            var tsHasta = hasta ? fechaATimestamp(hasta) : null;
+            var filtrados = todosLosRegistros.filter(function(r) {
+                if (trabajador !== 'todos' && r.usuario !== trabajador) return false;
+                var ts = fechaATimestamp(r.fechaEntrada);
+                if (tsDesde !== null || tsHasta !== null) {
+                    if (ts === null) return false;
+                    if (tsDesde !== null && ts < tsDesde) return false;
+                    if (tsHasta !== null && ts > tsHasta) return false;
                 }
-            } else {
-                html += '<p><strong>📍 Ubicación:</strong> ' + datos.ubicacion + '</p>';
-            }
-        } else {
-            html += '<p><strong>📍 Ubicación:</strong> No disponible</p>';
+                return true;
+            });
+            filtrados.sort(function(a, b) {
+                return (fechaATimestamp(b.fechaEntrada) || 0) - (fechaATimestamp(a.fechaEntrada) || 0);
+            });
+            if (filtrados.length === 0) { contenedor.innerHTML = '<p class="loading">No hay registros con esos filtros</p>'; return; }
+            var html = '<table><thead><tr>';
+            html += '<th>Fecha</th><th>Usuario</th><th>Nombre</th>';
+            html += '<th>Entrada</th><th>Comida In</th><th>Comida Out</th><th>Salida</th>';
+            html += '<th>T.Total</th><th>T.Prod</th>';
+            html += '</tr></thead><tbody>';
+            filtrados.forEach(function(reg) {
+                html += '<tr>';
+                html += '<td><strong>' + formatearFechaCliente(reg.fechaEntrada) + '</strong></td>';
+                html += '<td>' + reg.usuario + '</td>';
+                html += '<td>' + reg.nombre + '</td>';
+                html += '<td>' + hacerHoraClickeable(reg.horaEntrada, reg.ubicacionEntrada, reg.fotoEntrada, 'Entrada') + '</td>';
+                html += '<td>' + hacerHoraClickeable(reg.horaIniRef, reg.ubicacionIniRef, '', 'Comida In') + '</td>';
+                html += '<td>' + hacerHoraClickeable(reg.horaFinRef, reg.ubicacionFinRef, '', 'Comida Out') + '</td>';
+                html += '<td>' + hacerHoraClickeable(reg.horaSalida, reg.ubicacionSalida, reg.fotoSalida, 'Salida') + '</td>';
+                html += '<td>' + (reg.tiempoTotal || '-') + '</td>';
+                html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            html += '<p class="exito">Total: ' + filtrados.length + ' registros</p>';
+            contenedor.innerHTML = html;
         }
-        
-        // Foto
-        if (datos.foto && datos.foto !== '' && datos.foto !== '-' && datos.foto.includes('drive.google.com')) {
-            // Convertir URL de Drive a URL de imagen directa
-            let imgUrl = datos.foto;
-            const match = imgUrl.match(/\/d\/([^\/]+)/);
-            if (match) {
-                imgUrl = 'https://drive.google.com/uc?export=view&id=' + match[1];
-            }
-            html += '<p><strong>📷 Foto:</strong></p>';
-            html += '<p><a href="' + datos.foto + '" target="_blank">🔗 Abrir foto en Drive</a></p>';
-            html += '<img src="' + imgUrl + '" class="detalle-foto" alt="Foto del registro" onerror="this.style.display=\'none\'">';
-        } else if (datos.foto && datos.foto !== '' && datos.foto !== '-') {
-            html += '<p><strong>📷 Foto:</strong> <a href="' + datos.foto + '" target="_blank">Ver foto</a></p>';
-        } else {
-            html += '<p><strong>📷 Foto:</strong> No disponible</p>';
+        function hacerHoraClickeable(hora, ubicacion, foto, tipo) {
+            var horaFormateada = formatearHoraCliente(hora);
+            if (horaFormateada === '-' || (typeof horaFormateada === 'string' && horaFormateada.indexOf('Ver foto') !== -1)) return horaFormateada;
+            var datos = encodeURIComponent(JSON.stringify({ tipo: tipo, hora: horaFormateada, ubicacion: ubicacion || '', foto: foto || '' }));
+            return '<span class="hora-link" onclick="mostrarDetalle(\'' + datos + '\')">' + horaFormateada + ' 🔍</span>';
         }
-        
-        html += '</div>';
-        contenido.innerHTML = html;
-        document.getElementById('modal-detalle').style.display = 'block';
-    } catch (e) {
-        alert('Error al mostrar detalle: ' + e.message);
-    }
-}
+        function mostrarDetalle(datosEncoded) {
+            try {
+                var datos = JSON.parse(decodeURIComponent(datosEncoded));
+                document.getElementById('detalle-titulo').innerText = '📍 Detalle: ' + datos.tipo;
+                var html = '<div class="detalle-info">';
+                html += '<p><strong>⏰ Hora:</strong> ' + datos.hora + '</p>';
+                if (datos.ubicacion && datos.ubicacion !== '' && datos.ubicacion !== '-') {
+                    var coords = datos.ubicacion.split(',');
+                    if (coords.length === 2) {
+                        var lat = parseFloat(coords[0].trim());
+                        var lng = parseFloat(coords[1].trim());
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                            var mapsUrl = 'https://www.google.com/maps?q=' + lat + ',' + lng;
+                            html += '<p><strong>📍 Ubicación GPS:</strong></p>';
+                            html += '<p>Lat: ' + lat.toFixed(6) + ', Lng: ' + lng.toFixed(6) + '</p>';
+                            html += '<p><a href="' + mapsUrl + '" target="_blank">🗺️ Ver en Google Maps</a></p>';
+                        } else { html += '<p><strong>📍 Ubicación:</strong> ' + datos.ubicacion + '</p>'; }
+                    } else { html += '<p><strong>📍 Ubicación:</strong> ' + datos.ubicacion + '</p>'; }
+                } else { html += '<p><strong>📍 Ubicación:</strong> No disponible</p>'; }
+                if (datos.foto && datos.foto !== '' && datos.foto !== '-' && datos.foto.indexOf('drive.google.com') !== -1) {
+                    var imgUrl = datos.foto;
+                    var match = imgUrl.match(/\/d\/([^\/]+)/);
+                    if (match) imgUrl = 'https://drive.google.com/uc?export=view&id=' + match[1];
+                    html += '<p><strong>📷 Foto:</strong></p>';
+                    html += '<p><a href="' + datos.foto + '" target="_blank">🔗 Abrir foto en Drive</a></p>';
+                    html += '<img src="' + imgUrl + '" class="detalle-foto" alt="Foto" onerror="this.style.display=\'none\'">';
+                } else if (datos.foto && datos.foto !== '' && datos.foto !== '-') {
+                    html += '<p><strong>📷 Foto:</strong> <a href="' + datos.foto + '" target="_blank">Ver foto</a></p>';
+                } else { html += '<p><strong>📷 Foto:</strong> No disponible</p>'; }
+                html += '</div>';
+                document.getElementById('detalle-contenido').innerHTML = html;
+                document.getElementById('modal-detalle').style.display = 'block';
+            } catch (e) { alert('Error al mostrar detalle: ' + e.message); }
+        }
+        function cerrarModalDetalle() { document.getElementById('modal-detalle').style.display = 'none'; }
+        window.addEventListener('click', function(e) {
+            var modal = document.getElementById('modal-detalle');
+            if (e.target === modal) cerrarModalDetalle();
+        });
 
-function cerrarModalDetalle() {
-    document.getElementById('modal-detalle').style.display = 'none';
-}
-
-// Cerrar modal al hacer clic fuera
-window.addEventListener('click', function(e) {
-    const modal = document.getElementById('modal-detalle');
-    if (e.target === modal) {
-        cerrarModalDetalle();
-    }
-});
         async function cargarMiRegistro() {
-            const contenedor = document.getElementById('mi-registro-hoy');
+            var contenedor = document.getElementById('mi-registro-hoy');
             contenedor.innerHTML = '<p class="loading">Cargando...</p>';
             try {
-                const data = await llamarAppsScript({ accion: 'listar_asistencias' });
+                var data = await llamarAppsScript({ accion: 'listar_asistencias' });
                 if (data.exito && data.registros) {
-                    const hoy = new Date();
-                    const dia = String(hoy.getDate()).padStart(2, '0');
-                    const mes = String(hoy.getMonth() + 1).padStart(2, '0');
-                    const anio = hoy.getFullYear();
-                    const hoyFormateado = dia + '/' + mes + '/' + anio;
-                    const miRegistro = data.registros.find(function(r) { return r.usuario === usuarioActual && r.fechaEntrada === hoyFormateado; });
+                    var hoy = new Date();
+                    var dia = String(hoy.getDate()).padStart(2, '0');
+                    var mes = String(hoy.getMonth() + 1).padStart(2, '0');
+                    var anio = hoy.getFullYear();
+                    var hoyFormateado = dia + '/' + mes + '/' + anio;
+                    var miRegistro = null;
+                    for (var i = 0; i < data.registros.length; i++) {
+                        if (data.registros[i].usuario === usuarioActual && data.registros[i].fechaEntrada === hoyFormateado) {
+                            miRegistro = data.registros[i]; break;
+                        }
+                    }
                     if (miRegistro) {
-                        let html = '<table><tbody>';
+                        var html = '<table><tbody>';
                         html += '<tr><td><strong>Entrada:</strong></td><td>' + formatearHoraCliente(miRegistro.horaEntrada) + '</td></tr>';
                         html += '<tr><td><strong>Comida In:</strong></td><td>' + formatearHoraCliente(miRegistro.horaIniRef) + '</td></tr>';
                         html += '<tr><td><strong>Comida Out:</strong></td><td>' + formatearHoraCliente(miRegistro.horaFinRef) + '</td></tr>';
@@ -1024,6 +928,100 @@ window.addEventListener('click', function(e) {
                     } else { contenedor.innerHTML = '<p class="loading">No has registrado entrada hoy</p>'; }
                 }
             } catch (error) { contenedor.innerHTML = '<p class="error">Error al cargar</p>'; }
+        }
+
+        // ==================== PANEL EMPRESA ====================
+        function inicializarMapa(lat, lng) {
+            if (mapaEmpresa) { mapaEmpresa.remove(); mapaEmpresa = null; }
+            var latDefault = lat && !isNaN(parseFloat(lat)) ? parseFloat(lat) : 10.4806;
+            var lngDefault = lng && !isNaN(parseFloat(lng)) ? parseFloat(lng) : -66.9036;
+            mapaEmpresa = L.map('mapa-empresa').setView([latDefault, lngDefault], 15);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap', maxZoom: 19
+            }).addTo(mapaEmpresa);
+            marcadorEmpresa = L.marker([latDefault, lngDefault], { draggable: true }).addTo(mapaEmpresa);
+            marcadorEmpresa.on('dragend', function(e) {
+                var pos = e.target.getLatLng();
+                document.getElementById('empresa-latitud').value = pos.lat.toFixed(7);
+                document.getElementById('empresa-longitud').value = pos.lng.toFixed(7);
+            });
+            mapaEmpresa.on('click', function(e) {
+                marcadorEmpresa.setLatLng(e.latlng);
+                document.getElementById('empresa-latitud').value = e.latlng.lat.toFixed(7);
+                document.getElementById('empresa-longitud').value = e.latlng.lng.toFixed(7);
+            });
+        }
+        function usarMiUbicacionActual() {
+            if (!navigator.geolocation) { alert('❌ Tu navegador no soporta geolocalización'); return; }
+            var msg = document.getElementById('msg-empresa');
+            msg.innerText = '📍 Obteniendo tu ubicación...'; msg.style.color = 'blue';
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    var lat = position.coords.latitude;
+                    var lng = position.coords.longitude;
+                    document.getElementById('empresa-latitud').value = lat.toFixed(7);
+                    document.getElementById('empresa-longitud').value = lng.toFixed(7);
+                    if (mapaEmpresa) { mapaEmpresa.setView([lat, lng], 17); marcadorEmpresa.setLatLng([lat, lng]); }
+                    else { inicializarMapa(lat, lng); }
+                    msg.innerText = '✅ Ubicación actual obtenida. Ajusta el marcador si es necesario.';
+                    msg.style.color = 'green';
+                },
+                function(error) {
+                    var mensaje = '❌ Error al obtener ubicación.';
+                    if (error.code === error.PERMISSION_DENIED) mensaje = '❌ Debes autorizar el acceso a la ubicación.';
+                    msg.innerText = mensaje; msg.style.color = 'red';
+                },
+                { enableHighAccuracy: true }
+            );
+        }
+        function actualizarMapaManual() {
+            var lat = parseFloat(document.getElementById('empresa-latitud').value);
+            var lng = parseFloat(document.getElementById('empresa-longitud').value);
+            if (!isNaN(lat) && !isNaN(lng) && mapaEmpresa) {
+                mapaEmpresa.setView([lat, lng], 17);
+                marcadorEmpresa.setLatLng([lat, lng]);
+            }
+        }
+        async function cargarDatosEmpresa() {
+            var msg = document.getElementById('msg-empresa');
+            msg.innerText = '⏳ Cargando...'; msg.style.color = 'blue';
+            try {
+                var data = await llamarAppsScript({ accion: 'obtener_empresa' });
+                if (data.exito && data.empresa) {
+                    document.getElementById('empresa-nombre').value = data.empresa.nombre;
+                    document.getElementById('empresa-slogan').value = data.empresa.slogan;
+                    document.getElementById('empresa-direccion').value = data.empresa.direccion;
+                    document.getElementById('empresa-latitud').value = data.empresa.latitud;
+                    document.getElementById('empresa-longitud').value = data.empresa.longitud;
+                    setTimeout(function() { inicializarMapa(data.empresa.latitud, data.empresa.longitud); }, 100);
+                    msg.innerText = '✅ Datos cargados correctamente'; msg.style.color = 'green';
+                } else {
+                    msg.innerText = '⚠️ No hay datos guardados aún'; msg.style.color = 'orange';
+                    setTimeout(function() { inicializarMapa(); }, 100);
+                }
+            } catch (error) { msg.innerText = '❌ Error al cargar'; msg.style.color = 'red'; }
+        }
+        async function guardarDatosEmpresa() {
+            var data = {
+                accion: 'guardar_empresa',
+                nombre: document.getElementById('empresa-nombre').value.trim(),
+                slogan: document.getElementById('empresa-slogan').value.trim(),
+                direccion: document.getElementById('empresa-direccion').value.trim(),
+                latitud: document.getElementById('empresa-latitud').value.trim(),
+                longitud: document.getElementById('empresa-longitud').value.trim()
+            };
+            var msg = document.getElementById('msg-empresa');
+            if (!data.nombre) { msg.innerText = '❌ El nombre de la empresa es obligatorio'; msg.style.color = 'red'; return; }
+            msg.innerText = '⏳ Guardando...'; msg.style.color = 'blue';
+            try {
+                var res = await llamarAppsScript(data);
+                if (res.exito) {
+                    msg.innerText = '✅ ' + res.mensaje; msg.style.color = 'green';
+                    infoEmpresaGlobal = { nombre: data.nombre, slogan: data.slogan };
+                    document.getElementById('login-titulo').innerText = '🏢 ' + data.nombre;
+                    document.getElementById('login-slogan').innerText = data.slogan ? '"' + data.slogan + '"' : '';
+                } else { msg.innerText = '❌ ' + res.mensaje; msg.style.color = 'red'; }
+            } catch (error) { msg.innerText = '❌ Error de conexión'; msg.style.color = 'red'; }
         }
 
         // ==================== CERRAR SESIÓN ====================
@@ -1041,206 +1039,13 @@ window.addEventListener('click', function(e) {
         }
 
         document.getElementById('password').addEventListener('keypress', function(e) { if (e.key === 'Enter') iniciarSesion(); });
-        // ==================== PANEL EMPRESA ====================
-let mapaEmpresa = null;
-let marcadorEmpresa = null;
 
-function inicializarMapa(lat, lng) {
-    // Si ya existe el mapa, destruirlo para recrear
-    if (mapaEmpresa) {
-        mapaEmpresa.remove();
-        mapaEmpresa = null;
-    }
-    
-    // Coordenadas por defecto (Venezuela) si no hay datos
-    const latDefault = lat && !isNaN(parseFloat(lat)) ? parseFloat(lat) : 10.4806;
-    const lngDefault = lng && !isNaN(parseFloat(lng)) ? parseFloat(lng) : -66.9036;
-    
-    // Crear mapa
-    mapaEmpresa = L.map('mapa-empresa').setView([latDefault, lngDefault], 15);
-    
-    // Capa de OpenStreetMap (gratis, sin API key)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-        maxZoom: 19
-    }).addTo(mapaEmpresa);
-    
-    // Marcador arrastrable
-    marcadorEmpresa = L.marker([latDefault, lngDefault], { draggable: true }).addTo(mapaEmpresa);
-    
-    // Al arrastrar el marcador, actualizar los campos
-    marcadorEmpresa.on('dragend', function(e) {
-        const pos = e.target.getLatLng();
-        document.getElementById('emp-latitud').value = pos.lat.toFixed(7);
-        document.getElementById('emp-longitud').value = pos.lng.toFixed(7);
-    });
-    
-    // Al hacer clic en el mapa, mover el marcador
-    mapaEmpresa.on('click', function(e) {
-        marcadorEmpresa.setLatLng(e.latlng);
-        document.getElementById('emp-latitud').value = e.latlng.lat.toFixed(7);
-        document.getElementById('emp-longitud').value = e.latlng.lng.toFixed(7);
-    });
-}
-
-function usarMiUbicacionActual() {
-    if (!navigator.geolocation) {
-        alert('❌ Tu navegador no soporta geolocalización');
-        return;
-    }
-    
-    const msg = document.getElementById('msg-empresa');
-    msg.innerText = '📍 Obteniendo tu ubicación...';
-    msg.style.color = 'blue';
-    
-    navigator.geolocation.getCurrentPosition(
-        function(position) {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            document.getElementById('emp-latitud').value = lat.toFixed(7);
-            document.getElementById('emp-longitud').value = lng.toFixed(7);
-            
-            // Actualizar mapa
-            if (mapaEmpresa) {
-                mapaEmpresa.setView([lat, lng], 17);
-                marcadorEmpresa.setLatLng([lat, lng]);
-            } else {
-                inicializarMapa(lat, lng);
-            }
-            
-            msg.innerText = '✅ Ubicación actual obtenida. Ajusta el marcador si es necesario.';
-            msg.style.color = 'green';
-        },
-        function(error) {
-            let mensaje = '❌ Error al obtener ubicación.';
-            if (error.code === error.PERMISSION_DENIED) mensaje = '❌ Debes autorizar el acceso a la ubicación.';
-            msg.innerText = mensaje;
-            msg.style.color = 'red';
-        },
-        { enableHighAccuracy: true }
-    );
-}
-
-function actualizarMapaManual() {
-    const lat = parseFloat(document.getElementById('emp-latitud').value);
-    const lng = parseFloat(document.getElementById('emp-longitud').value);
-    
-    if (!isNaN(lat) && !isNaN(lng) && mapaEmpresa) {
-        mapaEmpresa.setView([lat, lng], 17);
-        marcadorEmpresa.setLatLng([lat, lng]);
-    }
-}
-
-async function cargarDatosEmpresa() {
-    const msg = document.getElementById('msg-empresa');
-    msg.innerText = '⏳ Cargando...';
-    msg.style.color = 'blue';
-    
-    try {
-        const data = await llamarAppsScript({ accion: 'obtener_empresa' });
-        if (data.exito && data.empresa) {
-            document.getElementById('emp-nombre').value = data.empresa.nombre;
-            document.getElementById('emp-slogan').value = data.empresa.slogan;
-            document.getElementById('emp-direccion').value = data.empresa.direccion;
-            document.getElementById('emp-latitud').value = data.empresa.latitud;
-            document.getElementById('emp-longitud').value = data.empresa.longitud;
-            
-            // Inicializar mapa con los datos cargados
-            setTimeout(function() {
-                inicializarMapa(data.empresa.latitud, data.empresa.longitud);
-            }, 100);
-            
-            msg.innerText = '✅ Datos cargados correctamente';
-            msg.style.color = 'green';
-        } else {
-            msg.innerText = '⚠️ No hay datos guardados aún';
-            msg.style.color = 'orange';
-            // Inicializar mapa con ubicación por defecto
-            setTimeout(function() {
-                inicializarMapa();
-            }, 100);
-        }
-    } catch (error) {
-        msg.innerText = '❌ Error al cargar';
-        msg.style.color = 'red';
-    }
-}
-
-async function guardarDatosEmpresa() {
-    const data = {
-        accion: 'guardar_empresa',
-        nombre: document.getElementById('emp-nombre').value.trim(),
-        slogan: document.getElementById('emp-slogan').value.trim(),
-        direccion: document.getElementById('emp-direccion').value.trim(),
-        latitud: document.getElementById('emp-latitud').value.trim(),
-        longitud: document.getElementById('emp-longitud').value.trim()
-    };
-    
-    const msg = document.getElementById('msg-empresa');
-    
-    if (!data.nombre) {
-        msg.innerText = '❌ El nombre de la empresa es obligatorio';
-        msg.style.color = 'red';
-        return;
-    }
-    
-    msg.innerText = '⏳ Guardando...';
-    msg.style.color = 'blue';
-    
-    try {
-        const res = await llamarAppsScript(data);
-        if (res.exito) {
-            msg.innerText = '✅ ' + res.mensaje;
-            msg.style.color = 'green';
-        } else {
-            msg.innerText = '❌ ' + res.mensaje;
-            msg.style.color = 'red';
-        }
-    } catch (error) {
-        msg.innerText = '❌ Error de conexión';
-        msg.style.color = 'red';
-    }
-}
+        // ==================== INICIALIZACIÓN ====================
+        window.addEventListener('DOMContentLoaded', function() {
+            aplicarVistaPorDispositivo();
+            cargarInfoEmpresaLogin();
+        });
+        window.addEventListener('resize', aplicarVistaPorDispositivo);
     </script>
-    <!-- MODAL DETALLE GPS/FOTO -->
-<div id="modal-detalle" class="modal-detalle">
-    <div class="modal-detalle-content">
-        <h3 id="detalle-titulo">📍 Detalle del Registro</h3>
-        <div id="detalle-contenido"></div>
-        <button onclick="cerrarModalDetalle()" class="btn-cerrar-detalle">❌ Cerrar</button>
-    </div>
-</div>
-<!-- MODAL EDITAR EMPLEADO -->
-<div id="modal-editar-empleado" class="modal">
-    <div class="modal-content">
-        <h3>✏️ Editar Empleado</h3>
-        <div class="info-box" style="background: #fff3cd; font-size: 13px;">
-            Editando: <strong id="editar-nombre-display"></strong> 
-            (<span id="editar-usuario-display"></span>)
-        </div>
-        <div class="form-group">
-            <label>Área:</label>
-            <input type="text" id="editar-area" placeholder="Ventas">
-        </div>
-        <div class="form-group">
-            <label>Cargo:</label>
-            <input type="text" id="editar-cargo" placeholder="Vendedor">
-        </div>
-        <div class="form-group">
-            <label>📱 Celular:</label>
-            <input type="tel" id="editar-celular" placeholder="0414-1234567">
-        </div>
-        <div class="form-group">
-            <label>📧 Correo:</label>
-            <input type="email" id="editar-correo" placeholder="juan@empresa.com">
-        </div>
-        <p id="msg-editar" class="error"></p>
-        <div class="modal-buttons">
-            <button onclick="guardarEdicionEmpleado()" class="btn-success">💾 Guardar Cambios</button>
-            <button onclick="cerrarModalEditar()" class="btn-secondary">❌ Cancelar</button>
-        </div>
-    </div>
-</div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>
