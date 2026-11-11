@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #mapa-empresa { height: 350px; width: 100%; border-radius: 8px; border: 2px solid #ddd; margin-top: 10px; }
+    .mapa-info { background: #e7f1ff; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 13px; }
+    .coordenadas-display { font-family: monospace; background: #f8f9fa; padding: 5px 10px; border-radius: 4px; display: inline-block; }
+</style>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control de Asistencia</title>
@@ -215,6 +221,58 @@
             <div id="tabla-asistencias"><p class="loading">Haz clic en "Cargar Registros" para ver</p></div>
             <button class="btn-secondary" onclick="cerrarSesion()">Cerrar Sesión</button>
         </div>
+
+<!-- PANEL DE EMPRESA -->
+<h3>🏢 Datos de la Empresa</h3>
+<button onclick="cargarDatosEmpresa()" style="margin-bottom: 10px;">🔄 Cargar datos actuales</button>
+
+<div class="grid-2">
+    <div class="form-group">
+        <label>🏢 Nombre de la Empresa:</label>
+        <input type="text" id="emp-nombre" placeholder="Mi Empresa S.A.">
+    </div>
+    <div class="form-group">
+        <label>📍 Dirección:</label>
+        <input type="text" id="emp-direccion" placeholder="Av. Principal, Centro">
+    </div>
+</div>
+
+<div class="form-group">
+    <label>💬 Slogan o Nota (se mostrará en la app):</label>
+    <textarea id="emp-slogan" placeholder="Tu éxito es nuestro compromiso" 
+              style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 80px; resize: vertical;"></textarea>
+</div>
+
+<div class="form-group">
+    <label>🗺️ Ubicación de la Empresa:</label>
+    <button type="button" onclick="usarMiUbicacionActual()" class="btn-info" style="margin-bottom: 10px;">
+        📍 Usar mi ubicación actual
+    </button>
+    
+    <div class="grid-2">
+        <div class="form-group">
+            <label>Latitud:</label>
+            <input type="number" step="any" id="emp-latitud" placeholder="10.1549732" onchange="actualizarMapaManual()">
+        </div>
+        <div class="form-group">
+            <label>Longitud:</label>
+            <input type="number" step="any" id="emp-longitud" placeholder="-64.6848183" onchange="actualizarMapaManual()">
+        </div>
+    </div>
+    
+    <!-- Mapa interactivo -->
+    <div id="mapa-empresa"></div>
+    <div class="mapa-info">
+        💡 <strong>Instrucciones:</strong> Arrastra el marcador rojo para ajustar la ubicación exacta. 
+        También puedes hacer clic en cualquier parte del mapa para mover el marcador.
+        Usa la rueda del mouse para hacer zoom.
+    </div>
+</div>
+
+<button onclick="guardarDatosEmpresa()" class="btn-success" style="margin-top: 15px;">
+    💾 Guardar Datos de la Empresa
+</button>
+<p id="msg-empresa" class="exito"></p>
 
         <!-- MODAL CAMBIAR CONTRASEÑA ADMIN -->
         <div id="modal-cambiar-pass-admin" class="modal">
@@ -474,7 +532,32 @@
                 } else { msg.innerText = data.mensaje || 'Error de Acceso'; }
             } catch (error) { msg.innerText = 'Error de conexión con el servidor'; }
             finally { btn.innerText = 'Ingresar'; btn.disabled = false; }
+            // Dentro de iniciarSesion(), después de mostrar el panel correspondiente:
+cargarInfoEmpresa();
         }
+
+        async function cargarInfoEmpresa() {
+    try {
+        const data = await llamarAppsScript({ accion: 'obtener_empresa' });
+        if (data.exito && data.empresa && data.empresa.nombre) {
+            // Mostrar en el título de la app
+            const titulos = document.querySelectorAll('h2');
+            if (titulos.length > 0) {
+                titulos[0].innerHTML = '🏢 ' + data.empresa.nombre;
+            }
+            // Mostrar slogan debajo del nombre del usuario
+            const infoBox = document.querySelector('.info-box');
+            if (infoBox && data.empresa.slogan) {
+                const sloganDiv = document.createElement('div');
+                sloganDiv.style.cssText = 'font-style: italic; color: #666; font-size: 13px; margin-top: 5px;';
+                sloganDiv.innerText = '"' + data.empresa.slogan + '"';
+                infoBox.appendChild(sloganDiv);
+            }
+        }
+    } catch (error) {
+        console.error('Error al cargar info empresa:', error);
+    }
+}
 
         // ==================== CAMBIAR CONTRASEÑA USUARIO ====================
         function mostrarModalCambiarPass() {
@@ -958,6 +1041,166 @@ window.addEventListener('click', function(e) {
         }
 
         document.getElementById('password').addEventListener('keypress', function(e) { if (e.key === 'Enter') iniciarSesion(); });
+        // ==================== PANEL EMPRESA ====================
+let mapaEmpresa = null;
+let marcadorEmpresa = null;
+
+function inicializarMapa(lat, lng) {
+    // Si ya existe el mapa, destruirlo para recrear
+    if (mapaEmpresa) {
+        mapaEmpresa.remove();
+        mapaEmpresa = null;
+    }
+    
+    // Coordenadas por defecto (Venezuela) si no hay datos
+    const latDefault = lat && !isNaN(parseFloat(lat)) ? parseFloat(lat) : 10.4806;
+    const lngDefault = lng && !isNaN(parseFloat(lng)) ? parseFloat(lng) : -66.9036;
+    
+    // Crear mapa
+    mapaEmpresa = L.map('mapa-empresa').setView([latDefault, lngDefault], 15);
+    
+    // Capa de OpenStreetMap (gratis, sin API key)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap',
+        maxZoom: 19
+    }).addTo(mapaEmpresa);
+    
+    // Marcador arrastrable
+    marcadorEmpresa = L.marker([latDefault, lngDefault], { draggable: true }).addTo(mapaEmpresa);
+    
+    // Al arrastrar el marcador, actualizar los campos
+    marcadorEmpresa.on('dragend', function(e) {
+        const pos = e.target.getLatLng();
+        document.getElementById('emp-latitud').value = pos.lat.toFixed(7);
+        document.getElementById('emp-longitud').value = pos.lng.toFixed(7);
+    });
+    
+    // Al hacer clic en el mapa, mover el marcador
+    mapaEmpresa.on('click', function(e) {
+        marcadorEmpresa.setLatLng(e.latlng);
+        document.getElementById('emp-latitud').value = e.latlng.lat.toFixed(7);
+        document.getElementById('emp-longitud').value = e.latlng.lng.toFixed(7);
+    });
+}
+
+function usarMiUbicacionActual() {
+    if (!navigator.geolocation) {
+        alert('❌ Tu navegador no soporta geolocalización');
+        return;
+    }
+    
+    const msg = document.getElementById('msg-empresa');
+    msg.innerText = '📍 Obteniendo tu ubicación...';
+    msg.style.color = 'blue';
+    
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            document.getElementById('emp-latitud').value = lat.toFixed(7);
+            document.getElementById('emp-longitud').value = lng.toFixed(7);
+            
+            // Actualizar mapa
+            if (mapaEmpresa) {
+                mapaEmpresa.setView([lat, lng], 17);
+                marcadorEmpresa.setLatLng([lat, lng]);
+            } else {
+                inicializarMapa(lat, lng);
+            }
+            
+            msg.innerText = '✅ Ubicación actual obtenida. Ajusta el marcador si es necesario.';
+            msg.style.color = 'green';
+        },
+        function(error) {
+            let mensaje = '❌ Error al obtener ubicación.';
+            if (error.code === error.PERMISSION_DENIED) mensaje = '❌ Debes autorizar el acceso a la ubicación.';
+            msg.innerText = mensaje;
+            msg.style.color = 'red';
+        },
+        { enableHighAccuracy: true }
+    );
+}
+
+function actualizarMapaManual() {
+    const lat = parseFloat(document.getElementById('emp-latitud').value);
+    const lng = parseFloat(document.getElementById('emp-longitud').value);
+    
+    if (!isNaN(lat) && !isNaN(lng) && mapaEmpresa) {
+        mapaEmpresa.setView([lat, lng], 17);
+        marcadorEmpresa.setLatLng([lat, lng]);
+    }
+}
+
+async function cargarDatosEmpresa() {
+    const msg = document.getElementById('msg-empresa');
+    msg.innerText = '⏳ Cargando...';
+    msg.style.color = 'blue';
+    
+    try {
+        const data = await llamarAppsScript({ accion: 'obtener_empresa' });
+        if (data.exito && data.empresa) {
+            document.getElementById('emp-nombre').value = data.empresa.nombre;
+            document.getElementById('emp-slogan').value = data.empresa.slogan;
+            document.getElementById('emp-direccion').value = data.empresa.direccion;
+            document.getElementById('emp-latitud').value = data.empresa.latitud;
+            document.getElementById('emp-longitud').value = data.empresa.longitud;
+            
+            // Inicializar mapa con los datos cargados
+            setTimeout(function() {
+                inicializarMapa(data.empresa.latitud, data.empresa.longitud);
+            }, 100);
+            
+            msg.innerText = '✅ Datos cargados correctamente';
+            msg.style.color = 'green';
+        } else {
+            msg.innerText = '⚠️ No hay datos guardados aún';
+            msg.style.color = 'orange';
+            // Inicializar mapa con ubicación por defecto
+            setTimeout(function() {
+                inicializarMapa();
+            }, 100);
+        }
+    } catch (error) {
+        msg.innerText = '❌ Error al cargar';
+        msg.style.color = 'red';
+    }
+}
+
+async function guardarDatosEmpresa() {
+    const data = {
+        accion: 'guardar_empresa',
+        nombre: document.getElementById('emp-nombre').value.trim(),
+        slogan: document.getElementById('emp-slogan').value.trim(),
+        direccion: document.getElementById('emp-direccion').value.trim(),
+        latitud: document.getElementById('emp-latitud').value.trim(),
+        longitud: document.getElementById('emp-longitud').value.trim()
+    };
+    
+    const msg = document.getElementById('msg-empresa');
+    
+    if (!data.nombre) {
+        msg.innerText = '❌ El nombre de la empresa es obligatorio';
+        msg.style.color = 'red';
+        return;
+    }
+    
+    msg.innerText = '⏳ Guardando...';
+    msg.style.color = 'blue';
+    
+    try {
+        const res = await llamarAppsScript(data);
+        if (res.exito) {
+            msg.innerText = '✅ ' + res.mensaje;
+            msg.style.color = 'green';
+        } else {
+            msg.innerText = '❌ ' + res.mensaje;
+            msg.style.color = 'red';
+        }
+    } catch (error) {
+        msg.innerText = '❌ Error de conexión';
+        msg.style.color = 'red';
+    }
+}
     </script>
     <!-- MODAL DETALLE GPS/FOTO -->
 <div id="modal-detalle" class="modal-detalle">
@@ -998,5 +1241,6 @@ window.addEventListener('click', function(e) {
         </div>
     </div>
 </div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>
