@@ -103,6 +103,16 @@
         #mapa-empresa { height: 350px; width: 100%; border-radius: 8px; border: 2px solid #ddd; margin-top: 10px; }
         .mapa-info { background: #e7f1ff; padding: 10px; border-radius: 6px; margin-top: 10px; font-size: 13px; }
         .login-slogan { text-align: center; font-style: italic; color: #666; margin-bottom: 20px; font-size: 14px; min-height: 20px; }
+        .login-direccion {
+    text-align: center;
+    color: #888;
+    font-size: 12px;
+    margin-bottom: 15px;
+    padding: 0 10px;
+}
+.login-direccion::before {
+    content: '📍 ';
+}
     </style>
 </head>
 <body>
@@ -111,6 +121,7 @@
         <div id="pantalla-login" class="pantalla activa login-container">
             <h2 id="login-titulo">🕐 Control de Asistencia</h2>
             <div id="login-slogan" class="login-slogan"></div>
+<div id="login-direccion" class="login-direccion"></div>
             <div class="form-group">
                 <label for="usuario">Usuario:</label>
                 <input type="text" id="usuario" placeholder="usuario" autocomplete="off">
@@ -419,21 +430,24 @@
 
         // ==================== INFO EMPRESA EN LOGIN ====================
         async function cargarInfoEmpresaLogin() {
-            try {
-                var data = await llamarAppsScript({ accion: 'obtener_empresa' });
-                if (data.exito && data.empresa) {
-                    infoEmpresaGlobal = data.empresa;
-                    if (data.empresa.nombre) {
-                        document.getElementById('login-titulo').innerText = '🏢 ' + data.empresa.nombre;
-                    }
-                    if (data.empresa.slogan) {
-                        document.getElementById('login-slogan').innerText = '"' + data.empresa.slogan + '"';
-                    }
-                }
-            } catch (error) {
-                console.error('Error al cargar info empresa:', error);
+    try {
+        var data = await llamarAppsScript({ accion: 'obtener_empresa' });
+        if (data.exito && data.empresa) {
+            infoEmpresaGlobal = data.empresa;
+            if (data.empresa.nombre) {
+                document.getElementById('login-titulo').innerText = '🏢 ' + data.empresa.nombre;
+            }
+            if (data.empresa.slogan) {
+                document.getElementById('login-slogan').innerText = '"' + data.empresa.slogan + '"';
+            }
+            if (data.empresa.direccion) {
+                document.getElementById('login-direccion').innerText = data.empresa.direccion;
             }
         }
+    } catch (error) {
+        console.error('Error al cargar info empresa:', error);
+    }
+}
 
         function mostrarInfoEmpresaEnPanel() {
             if (!infoEmpresaGlobal) return;
