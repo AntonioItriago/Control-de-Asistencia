@@ -31,9 +31,11 @@
         .btn-warning { background-color: #ffc107; color: #000; }
         .btn-warning:hover { background-color: #e0a800; }
         .btn-info { background-color: #17a2b8; }
+        .btn-info:hover { background-color: #138496; }
         .btn-danger { background-color: #dc3545; }
         .btn-danger:hover { background-color: #c82333; }
         .btn-install { background-color: #6f42c1; margin-bottom: 20px; }
+        .btn-install:hover { background-color: #5a32a3; }
         .pantalla { display: none; }
         .pantalla.activa { display: block; }
         .error { color: #dc3545; text-align: center; margin-top: 10px; font-weight: 600; }
@@ -129,7 +131,7 @@
                 Bienvenido, <strong id="nombre-user"></strong>
                 <div id="user-slogan" style="font-style: italic; color: #666; font-size: 13px; margin-top: 5px;"></div>
             </div>
-            <button id="btn-instalar" class="btn-install" style="display: none;" onclick="instalarApp()">📱 Instalar Aplicación en este dispositivo</button>
+            <button id="btn-instalar" class="btn-install" onclick="instalarApp()">📱 Instalar Aplicación en este dispositivo</button>
             <div class="titulo-con-boton">
                 <h3>📍 Registrar Jornada</h3>
                 <button class="btn-cambiar-pass" onclick="mostrarModalCambiarPass()">🔑 Cambiar Contraseña</button>
@@ -406,6 +408,49 @@
             var sloganDiv = document.getElementById('user-slogan');
             if (sloganDiv && infoEmpresaGlobal.slogan) {
                 sloganDiv.innerText = '"' + infoEmpresaGlobal.slogan + '"';
+            }
+        }
+
+        // ==================== INSTALAR APP (siempre visible) ====================
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+        async function instalarApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    alert('✅ Aplicación instalada exitosamente');
+                }
+                deferredPrompt = null;
+                document.getElementById('btn-instalar').style.display = 'none';
+            } else {
+                const esAndroid = /android/i.test(navigator.userAgent);
+                const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+                const esChrome = /chrome/i.test(navigator.userAgent);
+                
+                let instrucciones = '';
+                
+                if (esIOS) {
+                    instrucciones = '📱 Para instalar en iOS:\n\n' +
+                        '1. Toca el botón "Compartir" (cuadrado con flecha hacia arriba)\n' +
+                        '2. Desplázate hacia abajo y toca "Añadir a pantalla de inicio"\n' +
+                        '3. Toca "Añadir" en la esquina superior derecha';
+                } else if (esAndroid && esChrome) {
+                    instrucciones = '📱 Para instalar en Android:\n\n' +
+                        '1. Toca el menú (⋮) en la esquina superior derecha\n' +
+                        '2. Selecciona "Instalar aplicación" o "Añadir a pantalla de inicio"\n' +
+                        '3. Confirma la instalación';
+                } else {
+                    instrucciones = '📱 Para instalar:\n\n' +
+                        '1. Abre el menú del navegador (⋮ o ≡)\n' +
+                        '2. Busca "Instalar aplicación" o "Añadir a pantalla de inicio"\n' +
+                        '3. Confirma la instalación\n\n' +
+                        '💡 Tip: Usa Google Chrome para mejor experiencia';
+                }
+                
+                alert(instrucciones);
             }
         }
 
@@ -865,70 +910,65 @@
         });
 
         async function cargarMiRegistro() {
-    var contenedor = document.getElementById('mi-registro-hoy');
-    contenedor.innerHTML = '<p class="loading">Cargando...</p>';
-    try {
-        var data = await llamarAppsScript({ accion: 'listar_asistencias' });
-        if (data.exito && data.registros) {
-            console.log('Total registros recibidos:', data.registros.length);
-            console.log('Usuario actual:', usuarioActual);
-            
-            // Filtrar solo los registros del usuario actual
-            var misRegistros = [];
-            for (var i = 0; i < data.registros.length; i++) {
-                if (data.registros[i].usuario === usuarioActual) {
-                    misRegistros.push(data.registros[i]);
+            var contenedor = document.getElementById('mi-registro-hoy');
+            contenedor.innerHTML = '<p class="loading">Cargando...</p>';
+            try {
+                var data = await llamarAppsScript({ accion: 'listar_asistencias' });
+                if (data.exito && data.registros) {
+                    console.log('Total registros recibidos:', data.registros.length);
+                    console.log('Usuario actual:', usuarioActual);
+                    
+                    var misRegistros = [];
+                    for (var i = 0; i < data.registros.length; i++) {
+                        if (data.registros[i].usuario === usuarioActual) {
+                            misRegistros.push(data.registros[i]);
+                        }
+                    }
+                    console.log('Mis registros:', misRegistros.length);
+                    
+                    if (misRegistros.length === 0) {
+                        contenedor.innerHTML = '<p class="loading">No tienes registros aún</p>';
+                        return;
+                    }
+                    
+                    misRegistros.sort(function(a, b) {
+                        var tsA = fechaATimestamp(a.fechaEntrada) || 0;
+                        var tsB = fechaATimestamp(b.fechaEntrada) || 0;
+                        return tsB - tsA;
+                    });
+                    
+                    var miRegistro = misRegistros[0];
+                    console.log('Registro más reciente:', miRegistro);
+                    
+                    var tsRegistro = fechaATimestamp(miRegistro.fechaEntrada);
+                    var ahora = Date.now();
+                    var horasDiferencia = (ahora - tsRegistro) / (1000 * 60 * 60);
+                    
+                    console.log('Horas desde el registro:', horasDiferencia.toFixed(2));
+                    
+                    if (horasDiferencia > 26) {
+                        contenedor.innerHTML = '<p class="loading">No has registrado entrada hoy. Último registro: ' + formatearFechaCliente(miRegistro.fechaEntrada) + '</p>';
+                        return;
+                    }
+                    
+                    var html = '<table><tbody>';
+                    html += '<tr><td><strong>📅 Fecha:</strong></td><td>' + formatearFechaCliente(miRegistro.fechaEntrada) + '</td></tr>';
+                    html += '<tr><td><strong>✅ Entrada:</strong></td><td>' + formatearHoraCliente(miRegistro.horaEntrada) + '</td></tr>';
+                    html += '<tr><td><strong>🍽️ Comida In:</strong></td><td>' + formatearHoraCliente(miRegistro.horaIniRef) + '</td></tr>';
+                    html += '<tr><td><strong>☕ Comida Out:</strong></td><td>' + formatearHoraCliente(miRegistro.horaFinRef) + '</td></tr>';
+                    html += '<tr><td><strong>🚪 Salida:</strong></td><td>' + formatearHoraCliente(miRegistro.horaSalida) + '</td></tr>';
+                    html += '<tr><td><strong>⏱️ T. Productivo:</strong></td><td>' + (miRegistro.tiempoProductivo || '-') + '</td></tr>';
+                    html += '<tr><td><strong>⏱️ T. Total:</strong></td><td>' + (miRegistro.tiempoTotal || '-') + '</td></tr>';
+                    html += '</tbody></table>';
+                    contenedor.innerHTML = html;
+                } else {
+                    contenedor.innerHTML = '<p class="loading">No hay registros</p>';
                 }
+            } catch (error) {
+                console.error('Error en cargarMiRegistro:', error);
+                contenedor.innerHTML = '<p class="error">Error al cargar: ' + error.message + '</p>';
             }
-            console.log('Mis registros:', misRegistros.length);
-            
-            if (misRegistros.length === 0) {
-                contenedor.innerHTML = '<p class="loading">No tienes registros aún</p>';
-                return;
-            }
-            
-            // Ordenar por fecha descendente (más reciente primero)
-            misRegistros.sort(function(a, b) {
-                var tsA = fechaATimestamp(a.fechaEntrada) || 0;
-                var tsB = fechaATimestamp(b.fechaEntrada) || 0;
-                return tsB - tsA;
-            });
-            
-            // Tomar el registro más reciente
-            var miRegistro = misRegistros[0];
-            console.log('Registro más reciente:', miRegistro);
-            
-            // Verificar si es de hoy (comparación flexible: dentro de las últimas 26 horas)
-            var tsRegistro = fechaATimestamp(miRegistro.fechaEntrada);
-            var ahora = Date.now();
-            var horasDiferencia = (ahora - tsRegistro) / (1000 * 60 * 60);
-            
-            console.log('Horas desde el registro:', horasDiferencia.toFixed(2));
-            
-            if (horasDiferencia > 26) {
-                contenedor.innerHTML = '<p class="loading">No has registrado entrada hoy. Último registro: ' + formatearFechaCliente(miRegistro.fechaEntrada) + '</p>';
-                return;
-            }
-            
-            // Mostrar el registro
-            var html = '<table><tbody>';
-            html += '<tr><td><strong>📅 Fecha:</strong></td><td>' + formatearFechaCliente(miRegistro.fechaEntrada) + '</td></tr>';
-            html += '<tr><td><strong>✅ Entrada:</strong></td><td>' + formatearHoraCliente(miRegistro.horaEntrada) + '</td></tr>';
-            html += '<tr><td><strong>🍽️ Comida In:</strong></td><td>' + formatearHoraCliente(miRegistro.horaIniRef) + '</td></tr>';
-            html += '<tr><td><strong>☕ Comida Out:</strong></td><td>' + formatearHoraCliente(miRegistro.horaFinRef) + '</td></tr>';
-            html += '<tr><td><strong>🚪 Salida:</strong></td><td>' + formatearHoraCliente(miRegistro.horaSalida) + '</td></tr>';
-            html += '<tr><td><strong>⏱️ T. Productivo:</strong></td><td>' + (miRegistro.tiempoProductivo || '-') + '</td></tr>';
-            html += '<tr><td><strong>⏱️ T. Total:</strong></td><td>' + (miRegistro.tiempoTotal || '-') + '</td></tr>';
-            html += '</tbody></table>';
-            contenedor.innerHTML = html;
-        } else {
-            contenedor.innerHTML = '<p class="loading">No hay registros</p>';
         }
-    } catch (error) {
-        console.error('Error en cargarMiRegistro:', error);
-        contenedor.innerHTML = '<p class="error">Error al cargar: ' + error.message + '</p>';
-    }
-}
 
         // ==================== PANEL EMPRESA ====================
         function inicializarMapa(lat, lng) {
