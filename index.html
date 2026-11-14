@@ -411,48 +411,41 @@
             }
         }
 
-        // ==================== INSTALAR APP (siempre visible) ====================
-        window.addEventListener('beforeinstallprompt', function(e) {
-            e.preventDefault();
-            deferredPrompt = e;
-        });
-        async function instalarApp() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    alert('✅ Aplicación instalada exitosamente');
-                }
-                deferredPrompt = null;
-                document.getElementById('btn-instalar').style.display = 'none';
-            } else {
-                const esAndroid = /android/i.test(navigator.userAgent);
-                const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-                const esChrome = /chrome/i.test(navigator.userAgent);
-                
-                let instrucciones = '';
-                
-                if (esIOS) {
-                    instrucciones = '📱 Para instalar en iOS:\n\n' +
-                        '1. Toca el botón "Compartir" (cuadrado con flecha hacia arriba)\n' +
-                        '2. Desplázate hacia abajo y toca "Añadir a pantalla de inicio"\n' +
-                        '3. Toca "Añadir" en la esquina superior derecha';
-                } else if (esAndroid && esChrome) {
-                    instrucciones = '📱 Para instalar en Android:\n\n' +
-                        '1. Toca el menú (⋮) en la esquina superior derecha\n' +
-                        '2. Selecciona "Instalar aplicación" o "Añadir a pantalla de inicio"\n' +
-                        '3. Confirma la instalación';
-                } else {
-                    instrucciones = '📱 Para instalar:\n\n' +
-                        '1. Abre el menú del navegador (⋮ o ≡)\n' +
-                        '2. Busca "Instalar aplicación" o "Añadir a pantalla de inicio"\n' +
-                        '3. Confirma la instalación\n\n' +
-                        '💡 Tip: Usa Google Chrome para mejor experiencia';
-                }
-                
-                alert(instrucciones);
-            }
+        // Capturar el evento de instalación
+window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    console.log('✅ beforeinstallprompt capturado');
+});
+
+async function instalarApp() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const choiceResult = await deferredPrompt.userChoice;
+        if (choiceResult.outcome === 'accepted') {
+            console.log('✅ Usuario aceptó la instalación');
+            deferredPrompt = null;
+            var btn = document.getElementById('btn-instalar');
+            if (btn) btn.style.display = 'none';
+        } else {
+            console.log('❌ Usuario canceló');
         }
+    } else {
+        // Instrucciones manuales
+        const esAndroid = /android/i.test(navigator.userAgent);
+        const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        
+        let instrucciones = '';
+        if (esIOS) {
+            instrucciones = '📱 iOS:\n1. Toca "Compartir" (⬆️)\n2. "Añadir a pantalla de inicio"\n3. Toca "Añadir"';
+        } else if (esAndroid) {
+            instrucciones = '📱 Android:\n1. Toca el menú (⋮) arriba a la derecha\n2. "Instalar aplicación"\n3. Confirma';
+        } else {
+            instrucciones = '💻 Escritorio:\n1. Haz clic en el ícono de instalación en la barra de direcciones\n2. "Instalar"\n3. Confirma';
+        }
+        alert(instrucciones);
+    }
+}
 
         // ==================== GPS ====================
         function obtenerGPS() {
