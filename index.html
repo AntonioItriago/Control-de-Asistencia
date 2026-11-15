@@ -313,6 +313,27 @@
                 <button onclick="cerrarModalDetalle()" class="btn-cerrar-detalle">❌ Cerrar</button>
             </div>
         </div>
+
+        <!-- MODAL SALIDA ADMIN -->
+        <div id="modal-salida-admin" class="modal">
+            <div class="modal-content">
+                <h3>🚪 Cierre Administrativo de Jornada</h3>
+                <div class="info-box" style="background:#fff3cd;font-size:13px;">
+                    Trabajador: <strong id="salida-nombre-display"></strong><br>
+                    Jornada del: <span id="salida-fecha-display"></span>
+                </div>
+                <div class="alerta-seguridad">⚠️ Se registrará la <strong>hora actual del servidor</strong> como salida. Esta acción queda auditada.</div>
+                <div class="form-group" style="text-align:left;">
+                    <label>📝 Justificación (obligatoria, mín. 10 caracteres):</label>
+                    <textarea id="salida-justificacion" placeholder="Ej: El trabajador olvidó marcar la salida al finalizar su turno." style="min-height:90px;"></textarea>
+                </div>
+                <p id="msg-salida-admin" class="error"></p>
+                <div class="modal-buttons">
+                    <button onclick="confirmarSalidaAdmin()" class="btn-success">✅ Aprobar Salida</button>
+                    <button onclick="cerrarModalSalidaAdmin()" class="btn-secondary">❌ Cancelar</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -331,6 +352,8 @@
         let mapaEmpresa = null;
         let marcadorEmpresa = null;
         let infoEmpresaGlobal = null;
+        let salidaAdminUsuario = null;
+        let salidaAdminFecha = null;
 
         // ==================== UTILIDADES ====================
         function togglePassword() {
@@ -384,93 +407,72 @@
 
         // ==================== INFO EMPRESA EN LOGIN ====================
         async function cargarInfoEmpresaLogin() {
-    try {
-        var data = await llamarAppsScript({ accion: 'obtener_empresa' });
-        if (data.exito && data.empresa) {
-            infoEmpresaGlobal = data.empresa;
-            if (data.empresa.nombre) {
-                document.getElementById('login-titulo').innerText = '🏢 ' + data.empresa.nombre;
+            try {
+                var data = await llamarAppsScript({ accion: 'obtener_empresa' });
+                if (data.exito && data.empresa) {
+                    infoEmpresaGlobal = data.empresa;
+                    if (data.empresa.nombre) document.getElementById('login-titulo').innerText = '🏢 ' + data.empresa.nombre;
+                    if (data.empresa.slogan) document.getElementById('login-slogan').innerText = '"' + data.empresa.slogan + '"';
+                    if (data.empresa.direccion) document.getElementById('login-direccion').innerText = data.empresa.direccion;
+                }
+            } catch (error) {
+                console.error('Error al cargar info empresa:', error);
             }
-            if (data.empresa.slogan) {
-                document.getElementById('login-slogan').innerText = '"' + data.empresa.slogan + '"';
-            }
-            if (data.empresa.direccion) {
-                document.getElementById('login-direccion').innerText = data.empresa.direccion;
-            }
-            // Mostrar bloque dinámico también en el panel de usuario
+        }
+        function mostrarInfoEmpresaEnPanel() {
+            if (!infoEmpresaGlobal) return;
+            var sloganDiv = document.getElementById('user-slogan');
+            if (sloganDiv && infoEmpresaGlobal.slogan) sloganDiv.innerText = '"' + infoEmpresaGlobal.slogan + '"';
             mostrarBloqueInstalacionOSlogan();
         }
-    } catch (error) {
-        console.error('Error al cargar info empresa:', error);
-    }
-}
 
-        function mostrarInfoEmpresaEnPanel() {
-    if (!infoEmpresaGlobal) return;
-    var sloganDiv = document.getElementById('user-slogan');
-    if (sloganDiv && infoEmpresaGlobal.slogan) {
-        sloganDiv.innerText = '"' + infoEmpresaGlobal.slogan + '"';
-    }
-    // Mostrar bloque dinámico (instalación o slogan)
-    mostrarBloqueInstalacionOSlogan();
-}
-
-        // Capturar el evento de instalación
-window.addEventListener('beforeinstallprompt', function(e) {
-    e.preventDefault();
-    deferredPrompt = e;
-    console.log('✅ beforeinstallprompt capturado');
-});
-
-async function instalarApp() {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const choiceResult = await deferredPrompt.userChoice;
-        if (choiceResult.outcome === 'accepted') {
-            console.log('✅ Usuario aceptó la instalación');
-            deferredPrompt = null;
-            var btn = document.getElementById('btn-instalar');
-            if (btn) btn.style.display = 'none';
-        } else {
-            console.log('❌ Usuario canceló');
-        }
-    } else {
-        // Instrucciones manuales
-        const esAndroid = /android/i.test(navigator.userAgent);
-        const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-        
-        let instrucciones = '';
-        if (esIOS) {
-            instrucciones = '📱 iOS:\n1. Toca "Compartir" (⬆️)\n2. "Añadir a pantalla de inicio"\n3. Toca "Añadir"';
-        } else if (esAndroid) {
-            instrucciones = '📱 Android:\n1. Toca el menú (⋮) arriba a la derecha\n2. "Instalar aplicación"\n3. Confirma';
-        } else {
-            instrucciones = '💻 Escritorio:\n1. Haz clic en el ícono de instalación en la barra de direcciones\n2. "Instalar"\n3. Confirma';
-        }
-        alert(instrucciones);
-    }
-}
-
-async function cargarInfoEmpresaLogin() {
-    try {
-        var data = await llamarAppsScript({ accion: 'obtener_empresa' });
-        if (data.exito && data.empresa) {
-            infoEmpresaGlobal = data.empresa;
-            if (data.empresa.nombre) {
-                document.getElementById('login-titulo').innerText = '🏢 ' + data.empresa.nombre;
+        // ==================== BLOQUE INSTALACIÓN / SLOGAN ====================
+        function mostrarBloqueInstalacionOSlogan() {
+            var contenedor = document.getElementById('bloque-instalacion-o-slogan');
+            if (!contenedor) return;
+            var esPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            if (esPWA) {
+                var nombreEmpresa = infoEmpresaGlobal ? infoEmpresaGlobal.nombre : 'Mi Empresa';
+                var direccion = (infoEmpresaGlobal && infoEmpresaGlobal.direccion) ? infoEmpresaGlobal.direccion : '';
+                var htmlDireccion = direccion ? '<div style="font-size: 13px; margin-top: 6px; opacity: 0.9;">📍 ' + direccion + '</div>' : '';
+                contenedor.innerHTML = '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">' +
+                    '<div style="font-size: 28px; margin-bottom: 6px;">🏢</div>' +
+                    '<div style="font-size: 18px; font-weight: 700;">' + nombreEmpresa + '</div>' +
+                    htmlDireccion +
+                    '</div>';
+            } else {
+                contenedor.innerHTML = '<button class="btn-install" onclick="instalarApp()" style="background-color: #6f42c1; margin-bottom: 0; display: block; width: 100%;">📱 Instalar Aplicación en este dispositivo</button>';
             }
-            if (data.empresa.slogan) {
-                document.getElementById('login-slogan').innerText = '"' + data.empresa.slogan + '"';
-            }
-            if (data.empresa.direccion) {
-                document.getElementById('login-direccion').innerText = data.empresa.direccion;
-            }
-            // ❌ NO llamar mostrarBloqueInstalacionOSlogan() aquí
         }
-    } catch (error) {
-        console.error('Error al cargar info empresa:', error);
-    }
-}
+
+        // ==================== INSTALAR APP ====================
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('✅ beforeinstallprompt capturado');
+        });
+        async function instalarApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const choiceResult = await deferredPrompt.userChoice;
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('✅ Instalación aceptada');
+                    deferredPrompt = null;
+                    var btn = document.getElementById('bloque-instalacion-o-slogan');
+                    if (btn) btn.innerHTML = '';
+                } else {
+                    console.log('❌ Instalación cancelada');
+                }
+            } else {
+                const esAndroid = /android/i.test(navigator.userAgent);
+                const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+                let instrucciones = '';
+                if (esIOS) instrucciones = '📱 iOS:\n1. Toca "Compartir" (⬆️)\n2. "Añadir a pantalla de inicio"\n3. Toca "Añadir"';
+                else if (esAndroid) instrucciones = '📱 Android:\n1. Toca el menú (⋮) arriba a la derecha\n2. "Instalar aplicación"\n3. Confirma';
+                else instrucciones = '💻 Escritorio:\n1. Haz clic en el ícono de instalación en la barra de direcciones\n2. "Instalar"\n3. Confirma';
+                alert(instrucciones);
+            }
+        }
 
         // ==================== GPS ====================
         function obtenerGPS() {
@@ -722,95 +724,44 @@ async function cargarInfoEmpresaLogin() {
         }
 
         async function cargarEmpleados() {
-    var contenedor = document.getElementById('tabla-empleados');
-    contenedor.innerHTML = '<p class="loading">Cargando...</p>';
-    try {
-        var data = await llamarAppsScript({ accion: 'listar_empleados' });
-        if (data.exito && data.empleados && data.empleados.length > 0) {
-            var html = '<table><thead><tr>';
-            html += '<th>Usuario</th><th>Nombre</th><th>Área</th><th>Cargo</th>';
-            html += '<th>Celular</th><th>Correo</th><th>Perfil</th>';
-            html += '<th>Web Enviada</th><th>Acciones</th>';
-            html += '</tr></thead><tbody>';
-            
-            data.empleados.forEach(function(emp) {
-                // Limpiar celular para WhatsApp
-                var celularLimpio = (emp.celular || '').replace(/[^0-9]/g, '');
-                if (celularLimpio.startsWith('0')) celularLimpio = '58' + celularLimpio.substring(1);
-                if (!celularLimpio.startsWith('58') && celularLimpio.length >= 10) celularLimpio = '58' + celularLimpio;
-                
-                // Construir mensaje con credenciales
-                var mensaje = 'Hola ' + emp.nombre + ',\n\n' +
-                    'Tus credenciales de acceso al Control de Asistencia son:\n\n' +
-                    '🔗 Enlace: https://control-de-asistencia-tan.vercel.app\n' +
-                    '👤 Usuario: ' + emp.usuario + '\n' +
-                    '🔑 Contraseña: ' + emp.password + '\n\n' +
-                    'Por seguridad, cambia tu contraseña después del primer ingreso.';
-                
-                var mensajeCodificado = encodeURIComponent(mensaje);
-                
-                // Enlaces
-                var enlaceWhatsApp = celularLimpio.length >= 12 
-                    ? 'https://wa.me/' + celularLimpio + '?text=' + mensajeCodificado 
-                    : '#';
-                var enlaceCorreo = emp.correo 
-                    ? 'mailto:' + emp.correo + '?subject=Credenciales Control de Asistencia&body=' + mensajeCodificado 
-                    : '#';
-                
-                // Estado de Web enviada
-                var estadoWeb = emp.webEnviada && emp.webEnviada !== '' 
-                    ? '<span style="color: #28a745; font-weight: 600;">✅ ' + emp.webEnviada + '</span>' 
-                    : '<span style="color: #dc3545;">❌ Pendiente</span>';
-                
-                // Botones de acción
-                var botonesAccion = '';
-                if (emp.correo) {
-                    botonesAccion += '<a href="' + enlaceCorreo + '" target="_blank" class="btn-small btn-info" style="text-decoration: none; display: inline-block; margin-right: 3px;" onclick="marcarEnviada(\'' + emp.usuario + '\')" title="Enviar por correo">📧</a>';
-                }
-                if (celularLimpio.length >= 12) {
-                    botonesAccion += '<a href="' + enlaceWhatsApp + '" target="_blank" class="btn-small" style="background-color: #25D366; color: white; text-decoration: none; display: inline-block; margin-right: 3px; padding: 6px 12px; font-size: 12px; border-radius: 4px;" onclick="marcarEnviada(\'' + emp.usuario + '\')" title="Enviar por WhatsApp">💬</a>';
-                }
-                botonesAccion += '<button class="btn-small btn-success" onclick="marcarEnviada(\'' + emp.usuario + '\')" style="margin-right: 3px;" title="Marcar como enviada">✅</button>';
-                botonesAccion += '<button class="btn-small btn-warning" onclick="abrirModalEditar(\'' + emp.usuario + '\',\'' + emp.nombre.replace(/'/g, "\\'") + '\',\'' + emp.area.replace(/'/g, "\\'") + '\',\'' + emp.cargo.replace(/'/g, "\\'") + '\',\'' + (emp.celular || '').replace(/'/g, "\\'") + '\',\'' + (emp.correo || '').replace(/'/g, "\\'") + '\')" style="margin-right: 3px;">✏️</button>';
-                botonesAccion += '<button class="btn-small btn-danger" onclick="eliminarEmpleado(\'' + emp.usuario + '\')">🗑️</button>';
-                
-                html += '<tr>';
-                html += '<td>' + emp.usuario + '</td>';
-                html += '<td>' + emp.nombre + '</td>';
-                html += '<td>' + emp.area + '</td>';
-                html += '<td>' + emp.cargo + '</td>';
-                html += '<td>' + (emp.celular ? '<a href="' + enlaceWhatsApp + '" target="_blank" style="color: #25D366; font-weight: 600; text-decoration: none;">💬 ' + emp.celular + '</a>' : '-') + '</td>';
-                html += '<td>' + (emp.correo ? '<a href="mailto:' + emp.correo + '" style="color: #007bff;">' + emp.correo + '</a>' : '-') + '</td>';
-                html += '<td><strong>' + emp.perfil + '</strong></td>';
-                html += '<td>' + estadoWeb + '</td>';
-                html += '<td>' + botonesAccion + '</td>';
-                html += '</tr>';
-            });
-            
-            html += '</tbody></table>';
-            contenedor.innerHTML = html;
-        } else {
-            contenedor.innerHTML = '<p class="loading">No hay empleados registrados</p>';
+            var contenedor = document.getElementById('tabla-empleados');
+            contenedor.innerHTML = '<p class="loading">Cargando...</p>';
+            try {
+                var data = await llamarAppsScript({ accion: 'listar_empleados' });
+                if (data.exito && data.empleados && data.empleados.length > 0) {
+                    var html = '<table><thead><tr><th>Usuario</th><th>Nombre</th><th>Área</th><th>Cargo</th><th>Celular</th><th>Correo</th><th>Perfil</th><th>Web Enviada</th><th>Acciones</th></tr></thead><tbody>';
+                    data.empleados.forEach(function(emp) {
+                        var celularLimpio = (emp.celular || '').replace(/[^0-9]/g, '');
+                        if (celularLimpio.startsWith('0')) celularLimpio = '58' + celularLimpio.substring(1);
+                        if (!celularLimpio.startsWith('58') && celularLimpio.length >= 10) celularLimpio = '58' + celularLimpio;
+                        var mensaje = 'Hola ' + emp.nombre + ',\n\nTus credenciales de acceso al Control de Asistencia son:\n\n🔗 Enlace: https://control-de-asistencia-tan.vercel.app\n👤 Usuario: ' + emp.usuario + '\n🔑 Contraseña: ' + emp.password + '\n\nPor seguridad, cambia tu contraseña después del primer ingreso.';
+                        var mensajeCodificado = encodeURIComponent(mensaje);
+                        var enlaceWhatsApp = celularLimpio.length >= 12 ? 'https://wa.me/' + celularLimpio + '?text=' + mensajeCodificado : '#';
+                        var enlaceCorreo = emp.correo ? 'mailto:' + emp.correo + '?subject=Credenciales Control de Asistencia&body=' + mensajeCodificado : '#';
+                        var estadoWeb = emp.webEnviada && emp.webEnviada !== '' ? '<span style="color: #28a745; font-weight: 600;">✅ ' + emp.webEnviada + '</span>' : '<span style="color: #dc3545;">❌ Pendiente</span>';
+                        var botones = '';
+                        if (emp.correo) botones += '<a href="' + enlaceCorreo + '" target="_blank" class="btn-small btn-info" style="text-decoration: none; display: inline-block; margin-right: 3px;" onclick="marcarEnviada(\'' + emp.usuario + '\')">📧</a>';
+                        if (celularLimpio.length >= 12) botones += '<a href="' + enlaceWhatsApp + '" target="_blank" class="btn-small" style="background-color: #25D366; color: white; text-decoration: none; display: inline-block; margin-right: 3px; padding: 6px 12px; font-size: 12px; border-radius: 4px;" onclick="marcarEnviada(\'' + emp.usuario + '\')">💬</a>';
+                        botones += '<button class="btn-small btn-success" onclick="marcarEnviada(\'' + emp.usuario + '\')" style="margin-right: 3px;">✅</button>';
+                        botones += '<button class="btn-small btn-warning" onclick="abrirModalEditar(\'' + emp.usuario + '\',\'' + emp.nombre.replace(/'/g, "\\'") + '\',\'' + emp.area.replace(/'/g, "\\'") + '\',\'' + emp.cargo.replace(/'/g, "\\'") + '\',\'' + (emp.celular || '').replace(/'/g, "\\'") + '\',\'' + (emp.correo || '').replace(/'/g, "\\'") + '\')" style="margin-right: 3px;">✏️</button>';
+                        botones += '<button class="btn-small btn-danger" onclick="eliminarEmpleado(\'' + emp.usuario + '\')">🗑️</button>';
+                        html += '<tr>';
+                        html += '<td>' + emp.usuario + '</td>';
+                        html += '<td>' + emp.nombre + '</td>';
+                        html += '<td>' + emp.area + '</td>';
+                        html += '<td>' + emp.cargo + '</td>';
+                        html += '<td>' + (emp.celular ? '<a href="' + enlaceWhatsApp + '" target="_blank" style="color: #25D366; font-weight: 600; text-decoration: none;">💬 ' + emp.celular + '</a>' : '-') + '</td>';
+                        html += '<td>' + (emp.correo ? '<a href="mailto:' + emp.correo + '" style="color: #007bff;">' + emp.correo + '</a>' : '-') + '</td>';
+                        html += '<td><strong>' + emp.perfil + '</strong></td>';
+                        html += '<td>' + estadoWeb + '</td>';
+                        html += '<td>' + botones + '</td>';
+                        html += '</tr>';
+                    });
+                    html += '</tbody></table>';
+                    contenedor.innerHTML = html;
+                } else { contenedor.innerHTML = '<p class="loading">No hay empleados registrados</p>'; }
+            } catch (error) { contenedor.innerHTML = '<p class="error">Error al cargar</p>'; }
         }
-    } catch (error) {
-        contenedor.innerHTML = '<p class="error">Error al cargar</p>';
-    }
-}
-
-async function marcarEnviada(usuario) {
-    try {
-        var data = await llamarAppsScript({ accion: 'marcar_web_enviada', usuario: usuario });
-        if (data.exito) {
-            console.log('✅ Web marcada como enviada para ' + usuario);
-            // Recargar la lista para actualizar el estado
-            setTimeout(function() { cargarEmpleados(); }, 500);
-        } else {
-            console.error('❌ Error: ' + data.mensaje);
-        }
-    } catch (error) {
-        console.error('Error al marcar enviada:', error);
-    }
-}
 
         async function eliminarEmpleado(usuario) {
             if (!confirm('¿Eliminar usuario "' + usuario + '"?')) return;
@@ -819,6 +770,13 @@ async function marcarEnviada(usuario) {
                 if (data.exito) { alert('✅ ' + data.mensaje); cargarEmpleados(); }
                 else { alert('❌ ' + data.mensaje); }
             } catch (error) { alert('❌ Error de conexión'); }
+        }
+
+        async function marcarEnviada(usuario) {
+            try {
+                var data = await llamarAppsScript({ accion: 'marcar_web_enviada', usuario: usuario });
+                if (data.exito) setTimeout(function() { cargarEmpleados(); }, 500);
+            } catch (error) { console.error('Error al marcar enviada:', error); }
         }
 
         // ==================== EDITAR EMPLEADO ====================
@@ -843,19 +801,12 @@ async function marcarEnviada(usuario) {
             var celular = document.getElementById('editar-celular').value.trim();
             var correo = document.getElementById('editar-correo').value.trim();
             var msg = document.getElementById('msg-editar');
-
             if (!empleadoEditando) { msg.innerText = '❌ Error: no hay empleado seleccionado'; msg.style.color = 'red'; return; }
             if (correo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) { msg.innerText = '❌ Correo electrónico no válido'; msg.style.color = 'red'; return; }
             if (celular && celular.replace(/[^0-9]/g, '').length < 7) { msg.innerText = '❌ Celular no válido (mínimo 7 dígitos)'; msg.style.color = 'red'; return; }
-
             msg.innerText = '⏳ Guardando...'; msg.style.color = 'blue';
-
             try {
-                var data = await llamarAppsScript({
-                    accion: 'editar_empleado',
-                    usuario: empleadoEditando,
-                    area: area, cargo: cargo, celular: celular, correo: correo
-                });
+                var data = await llamarAppsScript({ accion: 'editar_empleado', usuario: empleadoEditando, area: area, cargo: cargo, celular: celular, correo: correo });
                 if (data.exito) {
                     msg.innerText = '✅ ' + data.mensaje; msg.style.color = 'green';
                     setTimeout(function() { cerrarModalEditar(); cargarEmpleados(); }, 1000);
@@ -878,100 +829,12 @@ async function marcarEnviada(usuario) {
                 } catch (error) { contenedor.innerHTML = '<p class="error">Error al cargar</p>'; }
             } else { mostrarRegistrosFiltrados(); }
         }
-
-// Variables para el modal de salida admin
-let salidaAdminUsuario = null, salidaAdminFecha = null;
-
-function abrirModalSalidaAdmin(usuario, nombre, fecha) {
-    salidaAdminUsuario = usuario;
-    salidaAdminFecha = fecha;
-    document.getElementById('salida-nombre-display').innerText = nombre;
-    document.getElementById('salida-fecha-display').innerText = fecha;
-    document.getElementById('salida-justificacion').value = '';
-    document.getElementById('msg-salida-admin').innerText = '';
-    document.getElementById('modal-salida-admin').style.display = 'block';
-}
-function cerrarModalSalidaAdmin() {
-    document.getElementById('modal-salida-admin').style.display = 'none';
-    salidaAdminUsuario = null; salidaAdminFecha = null;
-}
-async function confirmarSalidaAdmin() {
-    var just = document.getElementById('salida-justificacion').value.trim();
-    var msg = document.getElementById('msg-salida-admin');
-    if (just.length < 10) { msg.innerText = '❌ La justificación debe tener al menos 10 caracteres'; msg.style.color = 'red'; return; }
-    msg.innerText = '⏳ Registrando...'; msg.style.color = 'blue';
-    try {
-        var data = await llamarAppsScript({
-            accion: 'marcar_salida_admin',
-            usuario: salidaAdminUsuario,
-            fecha: salidaAdminFecha,
-            justificacion: just,
-            admin: nombreUsuarioActual
-        });
-        if (data.exito) {
-            msg.innerText = '✅ ' + data.mensaje; msg.style.color = 'green';
-            setTimeout(function(){ cerrarModalSalidaAdmin(); cargarAsistencias(true); }, 1500);
-        } else { msg.innerText = '❌ ' + data.mensaje; msg.style.color = 'red'; }
-    } catch (e) { msg.innerText = '❌ Error de conexión'; msg.style.color = 'red'; }
-}
-
-function cerrarModalSalidaAdmin() {
-    document.getElementById('modal-salida-admin').style.display = 'none';
-    salidaAdminUsuario = null;
-    salidaAdminFecha = null;
-}
-
-async function confirmarSalidaAdmin() {
-    const justificacion = document.getElementById('salida-justificacion').value.trim();
-    const msg = document.getElementById('msg-salida-admin');
-    
-    if (!justificacion) {
-        msg.innerText = '❌ La justificación es obligatoria';
-        msg.style.color = 'red';
-        return;
-    }
-    if (justificacion.length < 10) {
-        msg.innerText = '❌ La justificación debe tener al menos 10 caracteres';
-        msg.style.color = 'red';
-        return;
-    }
-    
-    msg.innerText = '⏳ Registrando salida...';
-    msg.style.color = 'blue';
-    
-    try {
-        const data = await llamarAppsScript({
-            accion: 'marcar_salida_admin',
-            usuario: salidaAdminUsuario,
-            fecha: salidaAdminFecha,
-            justificacion: justificacion
-        });
-        if (data.exito) {
-            msg.innerText = '✅ ' + data.mensaje;
-            msg.style.color = 'green';
-            setTimeout(function() {
-                cerrarModalSalidaAdmin();
-                cargarAsistencias(true);
-            }, 1500);
-        } else {
-            msg.innerText = '❌ ' + data.mensaje;
-            msg.style.color = 'red';
-        }
-    } catch (error) {
-        msg.innerText = '❌ Error de conexión';
-        msg.style.color = 'red';
-    }
-}
-
         function poblarSelectorTrabajadores() {
             var select = document.getElementById('filtro-trabajador');
             var trabajadores = [];
             var vistos = {};
             todosLosRegistros.forEach(function(r) {
-                if (!vistos[r.usuario]) {
-                    vistos[r.usuario] = true;
-                    trabajadores.push(r.usuario);
-                }
+                if (!vistos[r.usuario]) { vistos[r.usuario] = true; trabajadores.push(r.usuario); }
             });
             select.innerHTML = '<option value="todos">Todos los trabajadores</option>';
             trabajadores.forEach(function(trab) {
@@ -985,86 +848,62 @@ async function confirmarSalidaAdmin() {
                 select.appendChild(option);
             });
         }
+        function aplicarFiltros() { mostrarRegistrosFiltrados(); }
         function mostrarRegistrosFiltrados() {
-    var contenedor = document.getElementById('tabla-asistencias');
-    var trabajador = document.getElementById('filtro-trabajador').value;
-    var desde = document.getElementById('filtro-desde').value;
-    var hasta = document.getElementById('filtro-hasta').value;
-    var tsDesde = desde ? fechaATimestamp(desde) : null;
-    var tsHasta = hasta ? fechaATimestamp(hasta) : null;
-    
-    var filtrados = todosLosRegistros.filter(function(r) {
-        if (trabajador !== 'todos' && r.usuario !== trabajador) return false;
-        var ts = fechaATimestamp(r.fechaEntrada);
-        if (tsDesde !== null || tsHasta !== null) {
-            if (ts === null) return false;
-            if (tsDesde !== null && ts < tsDesde) return false;
-            if (tsHasta !== null && ts > tsHasta) return false;
+            var contenedor = document.getElementById('tabla-asistencias');
+            var trabajador = document.getElementById('filtro-trabajador').value;
+            var desde = document.getElementById('filtro-desde').value;
+            var hasta = document.getElementById('filtro-hasta').value;
+            var tsDesde = desde ? fechaATimestamp(desde) : null;
+            var tsHasta = hasta ? fechaATimestamp(hasta) : null;
+            var filtrados = todosLosRegistros.filter(function(r) {
+                if (trabajador !== 'todos' && r.usuario !== trabajador) return false;
+                var ts = fechaATimestamp(r.fechaEntrada);
+                if (tsDesde !== null || tsHasta !== null) {
+                    if (ts === null) return false;
+                    if (tsDesde !== null && ts < tsDesde) return false;
+                    if (tsHasta !== null && ts > tsHasta) return false;
+                }
+                return true;
+            });
+            filtrados.sort(function(a, b) {
+                return (fechaATimestamp(b.fechaEntrada) || 0) - (fechaATimestamp(a.fechaEntrada) || 0);
+            });
+            if (filtrados.length === 0) { contenedor.innerHTML = '<p class="loading">No hay registros con esos filtros</p>'; return; }
+            var html = '<table><thead><tr>';
+            html += '<th>Fecha</th><th>Usuario</th><th>Nombre</th>';
+            html += '<th>Entrada</th><th>Comida In</th><th>Comida Out</th><th>Salida</th>';
+            html += '<th>T.Prod</th><th>E.Vál</th><th>S.Vál</th>';
+            html += '</tr></thead><tbody>';
+            filtrados.forEach(function(reg) {
+                html += '<tr>';
+                html += '<td><strong>' + formatearFechaCliente(reg.fechaEntrada) + '</strong></td>';
+                html += '<td>' + reg.usuario + '</td>';
+                html += '<td>' + reg.nombre + '</td>';
+                html += '<td>' + hacerHoraClickeable(reg.horaEntrada, reg.ubicacionEntrada, reg.fotoEntrada, 'Entrada') + '</td>';
+                html += '<td>' + hacerHoraClickeable(reg.horaIniRef, reg.ubicacionIniRef, '', 'Comida In') + '</td>';
+                html += '<td>' + hacerHoraClickeable(reg.horaFinRef, reg.ubicacionFinRef, '', 'Comida Out') + '</td>';
+                if (reg.horaSalida && reg.horaSalida !== '' && reg.horaSalida !== '-') {
+                    var extra = (reg.justificacionSalida && reg.justificacionSalida !== '') ? ' 📝' : '';
+                    html += '<td>' + hacerHoraClickeable(reg.horaSalida, reg.ubicacionSalida, reg.fotoSalida, 'Salida') + extra + '</td>';
+                } else {
+                    html += '<td><button class="btn-small btn-danger" onclick="abrirModalSalidaAdmin(\'' + reg.usuario + '\',\'' + String(reg.nombre).replace(/'/g, "\\'") + '\',\'' + reg.fechaEntrada + '\')">🚪 Cerrar</button></td>';
+                }
+                html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
+                var ev = reg.entradaValida;
+                if (ev === '1') html += '<td style="text-align:center;"><span style="background:#28a745;color:white;padding:3px 8px;border-radius:4px;font-weight:600;">1 ✅</span></td>';
+                else if (ev === '0') html += '<td style="text-align:center;"><span style="background:#dc3545;color:white;padding:3px 8px;border-radius:4px;font-weight:600;">0 ⚠️</span></td>';
+                else html += '<td style="text-align:center;">-</td>';
+                var sv = reg.salidaValida;
+                if (sv === '1') html += '<td style="text-align:center;"><span style="background:#28a745;color:white;padding:3px 8px;border-radius:4px;font-weight:600;">1 ✅</span></td>';
+                else if (sv === '0') html += '<td style="text-align:center;"><span style="background:#dc3545;color:white;padding:3px 8px;border-radius:4px;font-weight:600;">0 ⚠️</span></td>';
+                else html += '<td style="text-align:center;">-</td>';
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            html += '<p class="exito">Total: ' + filtrados.length + ' registros</p>';
+            contenedor.innerHTML = html;
         }
-        return true;
-    });
-    
-    filtrados.sort(function(a, b) {
-        return (fechaATimestamp(b.fechaEntrada) || 0) - (fechaATimestamp(a.fechaEntrada) || 0);
-    });
-    
-    if (filtrados.length === 0) { 
-        contenedor.innerHTML = '<p class="loading">No hay registros con esos filtros</p>'; 
-        return; 
-    }
-    
-    var html = '<table><thead><tr>';
-    html += '<th>Fecha</th><th>Usuario</th><th>Nombre</th>';
-    html += '<th>Entrada</th><th>Comida In</th><th>Comida Out</th><th>Salida</th>';
-    html += '<th>T.Prod</th><th>E.Vál</th><th>S.Vál</th>';
-    html += '</tr></thead><tbody>';
-    
-    filtrados.forEach(function(reg) {
-        html += '<tr>';
-        html += '<td><strong>' + formatearFechaCliente(reg.fechaEntrada) + '</strong></td>';
-        html += '<td>' + reg.usuario + '</td>';
-        html += '<td>' + reg.nombre + '</td>';
-        html += '<td>' + hacerHoraClickeable(reg.horaEntrada, reg.ubicacionEntrada, reg.fotoEntrada, 'Entrada') + '</td>';
-        html += '<td>' + hacerHoraClickeable(reg.horaIniRef, reg.ubicacionIniRef, '', 'Comida In') + '</td>';
-        html += '<td>' + hacerHoraClickeable(reg.horaFinRef, reg.ubicacionFinRef, '', 'Comida Out') + '</td>';
-        
-        if (reg.horaSalida && reg.horaSalida !== '' && reg.horaSalida !== '-') {
-            var extra = (reg.justificacionSalida && reg.justificacionSalida !== '') ? ' 📝' : '';
-            html += '<td>' + hacerHoraClickeable(reg.horaSalida, reg.ubicacionSalida, reg.fotoSalida, 'Salida') + extra + '</td>';
-        } else {
-            html += '<td><button class="btn-small btn-danger" onclick="abrirModalSalidaAdmin(\'' + reg.usuario + '\',\'' + String(reg.nombre).replace(/'/g, "\\'") + '\',\'' + reg.fechaEntrada + '\')">🚪 Cerrar</button></td>';
-        }
-        
-        // Tiempo productivo
-        html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
-        
-        // Entrada Válida (1 o 0)
-        var ev = reg.entradaValida;
-        if (ev === '1') html += '<td style="text-align:center;"><span style="background:#28a745;color:white;padding:3px 8px;border-radius:4px;font-weight:600;">1 ✅</span></td>';
-        else if (ev === '0') html += '<td style="text-align:center;"><span style="background:#dc3545;color:white;padding:3px 8px;border-radius:4px;font-weight:600;">0 ⚠️</span></td>';
-        else html += '<td style="text-align:center;">-</td>';
-        
-        // Salida Válida (1 o 0)
-        var sv = reg.salidaValida;
-        if (sv === '1') html += '<td style="text-align:center;"><span style="background:#28a745;color:white;padding:3px 8px;border-radius:4px;font-weight:600;">1 ✅</span></td>';
-        else if (sv === '0') html += '<td style="text-align:center;"><span style="background:#dc3545;color:white;padding:3px 8px;border-radius:4px;font-weight:600;">0 ⚠️</span></td>';
-        else html += '<td style="text-align:center;">-</td>';
-        
-        html += '</tr>';
-    });
-    
-    html += '</tbody></table>';
-    html += '<p class="exito">Total: ' + filtrados.length + ' registros</p>';
-    contenedor.innerHTML = html;
-}
-    
-    html += '</tbody></table>';
-    html += '<p class="exito">Total: ' + filtrados.length + ' registros</p>';
-    contenedor.innerHTML = html;
-}
-
-
-
         function hacerHoraClickeable(hora, ubicacion, foto, tipo) {
             var horaFormateada = formatearHoraCliente(hora);
             if (horaFormateada === '-' || (typeof horaFormateada === 'string' && horaFormateada.indexOf('Ver foto') !== -1)) return horaFormateada;
@@ -1117,42 +956,24 @@ async function confirmarSalidaAdmin() {
             try {
                 var data = await llamarAppsScript({ accion: 'listar_asistencias' });
                 if (data.exito && data.registros) {
-                    console.log('Total registros recibidos:', data.registros.length);
-                    console.log('Usuario actual:', usuarioActual);
-                    
                     var misRegistros = [];
                     for (var i = 0; i < data.registros.length; i++) {
-                        if (data.registros[i].usuario === usuarioActual) {
-                            misRegistros.push(data.registros[i]);
-                        }
+                        if (data.registros[i].usuario === usuarioActual) misRegistros.push(data.registros[i]);
                     }
-                    console.log('Mis registros:', misRegistros.length);
-                    
-                    if (misRegistros.length === 0) {
-                        contenedor.innerHTML = '<p class="loading">No tienes registros aún</p>';
-                        return;
-                    }
-                    
+                    if (misRegistros.length === 0) { contenedor.innerHTML = '<p class="loading">No tienes registros aún</p>'; return; }
                     misRegistros.sort(function(a, b) {
                         var tsA = fechaATimestamp(a.fechaEntrada) || 0;
                         var tsB = fechaATimestamp(b.fechaEntrada) || 0;
                         return tsB - tsA;
                     });
-                    
                     var miRegistro = misRegistros[0];
-                    console.log('Registro más reciente:', miRegistro);
-                    
                     var tsRegistro = fechaATimestamp(miRegistro.fechaEntrada);
                     var ahora = Date.now();
                     var horasDiferencia = (ahora - tsRegistro) / (1000 * 60 * 60);
-                    
-                    console.log('Horas desde el registro:', horasDiferencia.toFixed(2));
-                    
                     if (horasDiferencia > 26) {
                         contenedor.innerHTML = '<p class="loading">No has registrado entrada hoy. Último registro: ' + formatearFechaCliente(miRegistro.fechaEntrada) + '</p>';
                         return;
                     }
-                    
                     var html = '<table><tbody>';
                     html += '<tr><td><strong>📅 Fecha:</strong></td><td>' + formatearFechaCliente(miRegistro.fechaEntrada) + '</td></tr>';
                     html += '<tr><td><strong>✅ Entrada:</strong></td><td>' + formatearHoraCliente(miRegistro.horaEntrada) + '</td></tr>';
@@ -1160,16 +981,12 @@ async function confirmarSalidaAdmin() {
                     html += '<tr><td><strong>☕ Comida Out:</strong></td><td>' + formatearHoraCliente(miRegistro.horaFinRef) + '</td></tr>';
                     html += '<tr><td><strong>🚪 Salida:</strong></td><td>' + formatearHoraCliente(miRegistro.horaSalida) + '</td></tr>';
                     html += '<tr><td><strong>⏱️ T. Productivo:</strong></td><td>' + (miRegistro.tiempoProductivo || '-') + '</td></tr>';
-                    html += '<tr><td><strong>⏱️ T. Total:</strong></td><td>' + (miRegistro.tiempoTotal || '-') + '</td></tr>';
+                    html += '<tr><td><strong>🎯 Entrada Válida:</strong></td><td>' + (miRegistro.entradaValida === '1' ? '✅ Dentro del perímetro' : (miRegistro.entradaValida === '0' ? '⚠️ Fuera del perímetro' : '-')) + '</td></tr>';
+                    html += '<tr><td><strong>🎯 Salida Válida:</strong></td><td>' + (miRegistro.salidaValida === '1' ? '✅ Dentro del perímetro' : (miRegistro.salidaValida === '0' ? '⚠️ Fuera del perímetro' : '-')) + '</td></tr>';
                     html += '</tbody></table>';
                     contenedor.innerHTML = html;
-                } else {
-                    contenedor.innerHTML = '<p class="loading">No hay registros</p>';
-                }
-            } catch (error) {
-                console.error('Error en cargarMiRegistro:', error);
-                contenedor.innerHTML = '<p class="error">Error al cargar: ' + error.message + '</p>';
-            }
+                } else { contenedor.innerHTML = '<p class="loading">No hay registros</p>'; }
+            } catch (error) { contenedor.innerHTML = '<p class="error">Error al cargar: ' + error.message + '</p>'; }
         }
 
         // ==================== PANEL EMPRESA ====================
@@ -1178,9 +995,7 @@ async function confirmarSalidaAdmin() {
             var latDefault = lat && !isNaN(parseFloat(lat)) ? parseFloat(lat) : 10.4806;
             var lngDefault = lng && !isNaN(parseFloat(lng)) ? parseFloat(lng) : -66.9036;
             mapaEmpresa = L.map('mapa-empresa').setView([latDefault, lngDefault], 15);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap', maxZoom: 19
-            }).addTo(mapaEmpresa);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(mapaEmpresa);
             marcadorEmpresa = L.marker([latDefault, lngDefault], { draggable: true }).addTo(mapaEmpresa);
             marcadorEmpresa.on('dragend', function(e) {
                 var pos = e.target.getLatLng();
@@ -1267,6 +1082,41 @@ async function confirmarSalidaAdmin() {
             } catch (error) { msg.innerText = '❌ Error de conexión'; msg.style.color = 'red'; }
         }
 
+        // ==================== SALIDA ADMIN ====================
+        function abrirModalSalidaAdmin(usuario, nombre, fecha) {
+            salidaAdminUsuario = usuario;
+            salidaAdminFecha = fecha;
+            document.getElementById('salida-nombre-display').innerText = nombre;
+            document.getElementById('salida-fecha-display').innerText = fecha;
+            document.getElementById('salida-justificacion').value = '';
+            document.getElementById('msg-salida-admin').innerText = '';
+            document.getElementById('modal-salida-admin').style.display = 'block';
+        }
+        function cerrarModalSalidaAdmin() {
+            document.getElementById('modal-salida-admin').style.display = 'none';
+            salidaAdminUsuario = null;
+            salidaAdminFecha = null;
+        }
+        async function confirmarSalidaAdmin() {
+            var just = document.getElementById('salida-justificacion').value.trim();
+            var msg = document.getElementById('msg-salida-admin');
+            if (just.length < 10) { msg.innerText = '❌ La justificación debe tener al menos 10 caracteres'; msg.style.color = 'red'; return; }
+            msg.innerText = '⏳ Registrando...'; msg.style.color = 'blue';
+            try {
+                var data = await llamarAppsScript({
+                    accion: 'marcar_salida_admin',
+                    usuario: salidaAdminUsuario,
+                    fecha: salidaAdminFecha,
+                    justificacion: just,
+                    admin: nombreUsuarioActual
+                });
+                if (data.exito) {
+                    msg.innerText = '✅ ' + data.mensaje; msg.style.color = 'green';
+                    setTimeout(function() { cerrarModalSalidaAdmin(); cargarAsistencias(true); }, 1500);
+                } else { msg.innerText = '❌ ' + data.mensaje; msg.style.color = 'red'; }
+            } catch (e) { msg.innerText = '❌ Error de conexión'; msg.style.color = 'red'; }
+        }
+
         // ==================== CERRAR SESIÓN ====================
         function cerrarSesion() {
             usuarioActual = null; nombreUsuarioActual = null; detenerCamara();
@@ -1288,25 +1138,5 @@ async function confirmarSalidaAdmin() {
             cargarInfoEmpresaLogin();
         });
     </script>
-    <!-- MODAL MARCAR SALIDA ADMIN -->
-<div id="modal-salida-admin" class="modal">
-    <div class="modal-content">
-        <h3>🚪 Cierre Administrativo de Jornada</h3>
-        <div class="info-box" style="background:#fff3cd;font-size:13px;">
-            Trabajador: <strong id="salida-nombre-display"></strong><br>
-            Jornada del: <span id="salida-fecha-display"></span>
-        </div>
-        <div class="alerta-seguridad">⚠️ Se registrará la <strong>hora actual del servidor</strong> como salida. Esta acción queda auditada con tu nombre y la justificación.</div>
-        <div class="form-group" style="text-align:left;">
-            <label>📝 Justificación (obligatoria, mín. 10 caracteres):</label>
-            <textarea id="salida-justificacion" placeholder="Ej: El trabajador olvidó marcar la salida al finalizar su turno." style="min-height:90px;"></textarea>
-        </div>
-        <p id="msg-salida-admin" class="error"></p>
-        <div class="modal-buttons">
-            <button onclick="confirmarSalidaAdmin()" class="btn-success">✅ Aprobar Salida</button>
-            <button onclick="cerrarModalSalidaAdmin()" class="btn-secondary">❌ Cancelar</button>
-        </div>
-    </div>
-</div>
 </body>
 </html>
