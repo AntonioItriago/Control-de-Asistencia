@@ -728,32 +728,95 @@ function mostrarBloqueInstalacionOSlogan() {
         }
 
         async function cargarEmpleados() {
-            var contenedor = document.getElementById('tabla-empleados');
-            contenedor.innerHTML = '<p class="loading">Cargando...</p>';
-            try {
-                var data = await llamarAppsScript({ accion: 'listar_empleados' });
-                if (data.exito && data.empleados && data.empleados.length > 0) {
-                    var html = '<table><thead><tr><th>Usuario</th><th>Nombre</th><th>Área</th><th>Cargo</th><th>Celular</th><th>Correo</th><th>Perfil</th><th>Acciones</th></tr></thead><tbody>';
-                    data.empleados.forEach(function(emp) {
-                        html += '<tr>';
-                        html += '<td>' + emp.usuario + '</td>';
-                        html += '<td>' + emp.nombre + '</td>';
-                        html += '<td>' + emp.area + '</td>';
-                        html += '<td>' + emp.cargo + '</td>';
-                        html += '<td>' + (emp.celular || '-') + '</td>';
-                        html += '<td>' + (emp.correo ? '<a href="mailto:' + emp.correo + '">' + emp.correo + '</a>' : '-') + '</td>';
-                        html += '<td><strong>' + emp.perfil + '</strong></td>';
-                        html += '<td>';
-                        html += '<button class="btn-small btn-warning" onclick="abrirModalEditar(\'' + emp.usuario + '\',\'' + emp.nombre.replace(/'/g, "\\'") + '\',\'' + emp.area.replace(/'/g, "\\'") + '\',\'' + emp.cargo.replace(/'/g, "\\'") + '\',\'' + (emp.celular || '').replace(/'/g, "\\'") + '\',\'' + (emp.correo || '').replace(/'/g, "\\'") + '\')" style="margin-right: 5px;">✏️</button>';
-                        html += '<button class="btn-small btn-danger" onclick="eliminarEmpleado(\'' + emp.usuario + '\')">🗑️</button>';
-                        html += '</td>';
-                        html += '</tr>';
-                    });
-                    html += '</tbody></table>';
-                    contenedor.innerHTML = html;
-                } else { contenedor.innerHTML = '<p class="loading">No hay empleados registrados</p>'; }
-            } catch (error) { contenedor.innerHTML = '<p class="error">Error al cargar</p>'; }
+    var contenedor = document.getElementById('tabla-empleados');
+    contenedor.innerHTML = '<p class="loading">Cargando...</p>';
+    try {
+        var data = await llamarAppsScript({ accion: 'listar_empleados' });
+        if (data.exito && data.empleados && data.empleados.length > 0) {
+            var html = '<table><thead><tr>';
+            html += '<th>Usuario</th><th>Nombre</th><th>Área</th><th>Cargo</th>';
+            html += '<th>Celular</th><th>Correo</th><th>Perfil</th>';
+            html += '<th>Web Enviada</th><th>Acciones</th>';
+            html += '</tr></thead><tbody>';
+            
+            data.empleados.forEach(function(emp) {
+                // Limpiar celular para WhatsApp
+                var celularLimpio = (emp.celular || '').replace(/[^0-9]/g, '');
+                if (celularLimpio.startsWith('0')) celularLimpio = '58' + celularLimpio.substring(1);
+                if (!celularLimpio.startsWith('58') && celularLimpio.length >= 10) celularLimpio = '58' + celularLimpio;
+                
+                // Construir mensaje con credenciales
+                var mensaje = 'Hola ' + emp.nombre + ',\n\n' +
+                    'Tus credenciales de acceso al Control de Asistencia son:\n\n' +
+                    '🔗 Enlace: https://control-de-asistencia-tan.vercel.app\n' +
+                    '👤 Usuario: ' + emp.usuario + '\n' +
+                    '🔑 Contraseña: ' + emp.password + '\n\n' +
+                    'Por seguridad, cambia tu contraseña después del primer ingreso.';
+                
+                var mensajeCodificado = encodeURIComponent(mensaje);
+                
+                // Enlaces
+                var enlaceWhatsApp = celularLimpio.length >= 12 
+                    ? 'https://wa.me/' + celularLimpio + '?text=' + mensajeCodificado 
+                    : '#';
+                var enlaceCorreo = emp.correo 
+                    ? 'mailto:' + emp.correo + '?subject=Credenciales Control de Asistencia&body=' + mensajeCodificado 
+                    : '#';
+                
+                // Estado de Web enviada
+                var estadoWeb = emp.webEnviada && emp.webEnviada !== '' 
+                    ? '<span style="color: #28a745; font-weight: 600;">✅ ' + emp.webEnviada + '</span>' 
+                    : '<span style="color: #dc3545;">❌ Pendiente</span>';
+                
+                // Botones de acción
+                var botonesAccion = '';
+                if (emp.correo) {
+                    botonesAccion += '<a href="' + enlaceCorreo + '" target="_blank" class="btn-small btn-info" style="text-decoration: none; display: inline-block; margin-right: 3px;" onclick="marcarEnviada(\'' + emp.usuario + '\')" title="Enviar por correo">📧</a>';
+                }
+                if (celularLimpio.length >= 12) {
+                    botonesAccion += '<a href="' + enlaceWhatsApp + '" target="_blank" class="btn-small" style="background-color: #25D366; color: white; text-decoration: none; display: inline-block; margin-right: 3px; padding: 6px 12px; font-size: 12px; border-radius: 4px;" onclick="marcarEnviada(\'' + emp.usuario + '\')" title="Enviar por WhatsApp">💬</a>';
+                }
+                botonesAccion += '<button class="btn-small btn-success" onclick="marcarEnviada(\'' + emp.usuario + '\')" style="margin-right: 3px;" title="Marcar como enviada">✅</button>';
+                botonesAccion += '<button class="btn-small btn-warning" onclick="abrirModalEditar(\'' + emp.usuario + '\',\'' + emp.nombre.replace(/'/g, "\\'") + '\',\'' + emp.area.replace(/'/g, "\\'") + '\',\'' + emp.cargo.replace(/'/g, "\\'") + '\',\'' + (emp.celular || '').replace(/'/g, "\\'") + '\',\'' + (emp.correo || '').replace(/'/g, "\\'") + '\')" style="margin-right: 3px;">✏️</button>';
+                botonesAccion += '<button class="btn-small btn-danger" onclick="eliminarEmpleado(\'' + emp.usuario + '\')">🗑️</button>';
+                
+                html += '<tr>';
+                html += '<td>' + emp.usuario + '</td>';
+                html += '<td>' + emp.nombre + '</td>';
+                html += '<td>' + emp.area + '</td>';
+                html += '<td>' + emp.cargo + '</td>';
+                html += '<td>' + (emp.celular ? '<a href="' + enlaceWhatsApp + '" target="_blank" style="color: #25D366; font-weight: 600; text-decoration: none;">💬 ' + emp.celular + '</a>' : '-') + '</td>';
+                html += '<td>' + (emp.correo ? '<a href="mailto:' + emp.correo + '" style="color: #007bff;">' + emp.correo + '</a>' : '-') + '</td>';
+                html += '<td><strong>' + emp.perfil + '</strong></td>';
+                html += '<td>' + estadoWeb + '</td>';
+                html += '<td>' + botonesAccion + '</td>';
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            contenedor.innerHTML = html;
+        } else {
+            contenedor.innerHTML = '<p class="loading">No hay empleados registrados</p>';
         }
+    } catch (error) {
+        contenedor.innerHTML = '<p class="error">Error al cargar</p>';
+    }
+}
+
+async function marcarEnviada(usuario) {
+    try {
+        var data = await llamarAppsScript({ accion: 'marcar_web_enviada', usuario: usuario });
+        if (data.exito) {
+            console.log('✅ Web marcada como enviada para ' + usuario);
+            // Recargar la lista para actualizar el estado
+            setTimeout(function() { cargarEmpleados(); }, 500);
+        } else {
+            console.error('❌ Error: ' + data.mensaje);
+        }
+    } catch (error) {
+        console.error('Error al marcar enviada:', error);
+    }
+}
 
         async function eliminarEmpleado(usuario) {
             if (!confirm('¿Eliminar usuario "' + usuario + '"?')) return;
