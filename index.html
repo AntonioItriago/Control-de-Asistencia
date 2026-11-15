@@ -451,30 +451,24 @@ async function instalarApp() {
     }
 }
 
-function mostrarBloqueInstalacionOSlogan() {
-    var contenedor = document.getElementById('bloque-instalacion-o-slogan');
-    if (!contenedor) return;
-    
-    var esPWA = window.matchMedia('(display-mode: standalone)').matches 
-                || window.navigator.standalone === true;
-    
-    if (esPWA) {
-        // Está en la app instalada → mostrar nombre + dirección
-        var nombreEmpresa = infoEmpresaGlobal ? infoEmpresaGlobal.nombre : 'Mi Empresa';
-        var direccion = (infoEmpresaGlobal && infoEmpresaGlobal.direccion) ? infoEmpresaGlobal.direccion : '';
-        
-        var htmlDireccion = direccion 
-            ? '<div style="font-size: 13px; margin-top: 6px; opacity: 0.9;">📍 ' + direccion + '</div>' 
-            : '';
-        
-        contenedor.innerHTML = '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">' +
-            '<div style="font-size: 28px; margin-bottom: 6px;">🏢</div>' +
-            '<div style="font-size: 18px; font-weight: 700;">' + nombreEmpresa + '</div>' +
-            htmlDireccion +
-            '</div>';
-    } else {
-        // Está en el navegador → mostrar botón de instalación
-        contenedor.innerHTML = '<button id="btn-instalar" class="btn-install" onclick="instalarApp()" style="background-color: #6f42c1; margin-bottom: 0; display: block; width: 100%;">📱 Instalar Aplicación en este dispositivo</button>';
+async function cargarInfoEmpresaLogin() {
+    try {
+        var data = await llamarAppsScript({ accion: 'obtener_empresa' });
+        if (data.exito && data.empresa) {
+            infoEmpresaGlobal = data.empresa;
+            if (data.empresa.nombre) {
+                document.getElementById('login-titulo').innerText = '🏢 ' + data.empresa.nombre;
+            }
+            if (data.empresa.slogan) {
+                document.getElementById('login-slogan').innerText = '"' + data.empresa.slogan + '"';
+            }
+            if (data.empresa.direccion) {
+                document.getElementById('login-direccion').innerText = data.empresa.direccion;
+            }
+            // ❌ NO llamar mostrarBloqueInstalacionOSlogan() aquí
+        }
+    } catch (error) {
+        console.error('Error al cargar info empresa:', error);
     }
 }
 
@@ -991,32 +985,66 @@ async function confirmarSalidaAdmin() {
                 select.appendChild(option);
             });
         }
-        function aplicarFiltros() { mostrarRegistrosFiltrados(); }
-        filtrados.forEach(function(reg) {
-    html += '<tr>';
-    html += '<td><strong>' + formatearFechaCliente(reg.fechaEntrada) + '</strong></td>';
-    html += '<td>' + reg.usuario + '</td>';
-    html += '<td>' + reg.nombre + '</td>';
-    html += '<td>' + hacerHoraClickeable(reg.horaEntrada, reg.ubicacionEntrada, reg.fotoEntrada, 'Entrada') + '</td>';
-    html += '<td>' + hacerHoraClickeable(reg.horaIniRef, reg.ubicacionIniRef, '', 'Comida In') + '</td>';
-    html += '<td>' + hacerHoraClickeable(reg.horaFinRef, reg.ubicacionFinRef, '', 'Comida Out') + '</td>';
+        function mostrarRegistrosFiltrados() {
+    var contenedor = document.getElementById('tabla-asistencias');
+    var trabajador = document.getElementById('filtro-trabajador').value;
+    var desde = document.getElementById('filtro-desde').value;
+    var hasta = document.getElementById('filtro-hasta').value;
+    var tsDesde = desde ? fechaATimestamp(desde) : null;
+    var tsHasta = hasta ? fechaATimestamp(hasta) : null;
     
-    // Columna Salida con botón admin si no tiene salida
-    if (reg.horaSalida && reg.horaSalida !== '' && reg.horaSalida !== '-') {
-        if (reg.horaSalida && reg.horaSalida !== '-') {
-    var extra = reg.justificacionSalida ? ' 📝' : '';
-    html += '<td>' + hacerHoraClickeable(reg.horaSalida, reg.ubicacionSalida, reg.fotoSalida, 'Salida') + extra + '</td>';
-} else {
-    html += '<td><button class="btn-small btn-danger" onclick="abrirModalSalidaAdmin(\'' + reg.usuario + '\',\'' + String(reg.nombre).replace(/'/g,"\\'") + '\',\'' + reg.fechaEntrada + '\')">🚪 Cerrar</button></td>';
-}
-    } else {
-        html += '<td><button class="btn-small btn-danger" onclick="abrirModalSalidaAdmin(\'' + reg.usuario + '\',\'' + reg.nombre.replace(/'/g, "\\'") + '\',\'' + reg.fechaEntrada + '\')" title="Marcar salida como admin">🚪 Admin</button></td>';
+    var filtrados = todosLosRegistros.filter(function(r) {
+        if (trabajador !== 'todos' && r.usuario !== trabajador) return false;
+        var ts = fechaATimestamp(r.fechaEntrada);
+        if (tsDesde !== null || tsHasta !== null) {
+            if (ts === null) return false;
+            if (tsDesde !== null && ts < tsDesde) return false;
+            if (tsHasta !== null && ts > tsHasta) return false;
+        }
+        return true;
+    });
+    
+    filtrados.sort(function(a, b) {
+        return (fechaATimestamp(b.fechaEntrada) || 0) - (fechaATimestamp(a.fechaEntrada) || 0);
+    });
+    
+    if (filtrados.length === 0) { 
+        contenedor.innerHTML = '<p class="loading">No hay registros con esos filtros</p>'; 
+        return; 
     }
     
-    html += '<td>' + (reg.tiempoTotal || '-') + '</td>';
-    html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
-    html += '</tr>';
-});
+    var html = '<table><thead><tr>';
+    html += '<th>Fecha</th><th>Usuario</th><th>Nombre</th>';
+    html += '<th>Entrada</th><th>Comida In</th><th>Comida Out</th><th>Salida</th>';
+    html += '<th>T.Total</th><th>T.Prod</th>';
+    html += '</tr></thead><tbody>';
+    
+    filtrados.forEach(function(reg) {
+        html += '<tr>';
+        html += '<td><strong>' + formatearFechaCliente(reg.fechaEntrada) + '</strong></td>';
+        html += '<td>' + reg.usuario + '</td>';
+        html += '<td>' + reg.nombre + '</td>';
+        html += '<td>' + hacerHoraClickeable(reg.horaEntrada, reg.ubicacionEntrada, reg.fotoEntrada, 'Entrada') + '</td>';
+        html += '<td>' + hacerHoraClickeable(reg.horaIniRef, reg.ubicacionIniRef, '', 'Comida In') + '</td>';
+        html += '<td>' + hacerHoraClickeable(reg.horaFinRef, reg.ubicacionFinRef, '', 'Comida Out') + '</td>';
+        
+        // Columna Salida: si tiene salida muestra la hora, si no muestra botón admin
+        if (reg.horaSalida && reg.horaSalida !== '' && reg.horaSalida !== '-') {
+            var extra = (reg.justificacionSalida && reg.justificacionSalida !== '') ? ' 📝' : '';
+            html += '<td>' + hacerHoraClickeable(reg.horaSalida, reg.ubicacionSalida, reg.fotoSalida, 'Salida') + extra + '</td>';
+        } else {
+            html += '<td><button class="btn-small btn-danger" onclick="abrirModalSalidaAdmin(\'' + reg.usuario + '\',\'' + String(reg.nombre).replace(/'/g, "\\'") + '\',\'' + reg.fechaEntrada + '\')" title="Cerrar jornada como admin">🚪 Cerrar</button></td>';
+        }
+        
+        html += '<td>' + (reg.tiempoTotal || '-') + '</td>';
+        html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table>';
+    html += '<p class="exito">Total: ' + filtrados.length + ' registros</p>';
+    contenedor.innerHTML = html;
+}
 
 
 
