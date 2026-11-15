@@ -1016,7 +1016,7 @@ async function confirmarSalidaAdmin() {
     var html = '<table><thead><tr>';
     html += '<th>Fecha</th><th>Usuario</th><th>Nombre</th>';
     html += '<th>Entrada</th><th>Comida In</th><th>Comida Out</th><th>Salida</th>';
-    html += '<th>T.Total</th><th>T.Prod</th>';
+    html += '<th>T.Prod</th><th>E.Vál</th><th>S.Vál</th>';
     html += '</tr></thead><tbody>';
     
     filtrados.forEach(function(reg) {
@@ -1028,18 +1028,35 @@ async function confirmarSalidaAdmin() {
         html += '<td>' + hacerHoraClickeable(reg.horaIniRef, reg.ubicacionIniRef, '', 'Comida In') + '</td>';
         html += '<td>' + hacerHoraClickeable(reg.horaFinRef, reg.ubicacionFinRef, '', 'Comida Out') + '</td>';
         
-        // Columna Salida: si tiene salida muestra la hora, si no muestra botón admin
         if (reg.horaSalida && reg.horaSalida !== '' && reg.horaSalida !== '-') {
             var extra = (reg.justificacionSalida && reg.justificacionSalida !== '') ? ' 📝' : '';
             html += '<td>' + hacerHoraClickeable(reg.horaSalida, reg.ubicacionSalida, reg.fotoSalida, 'Salida') + extra + '</td>';
         } else {
-            html += '<td><button class="btn-small btn-danger" onclick="abrirModalSalidaAdmin(\'' + reg.usuario + '\',\'' + String(reg.nombre).replace(/'/g, "\\'") + '\',\'' + reg.fechaEntrada + '\')" title="Cerrar jornada como admin">🚪 Cerrar</button></td>';
+            html += '<td><button class="btn-small btn-danger" onclick="abrirModalSalidaAdmin(\'' + reg.usuario + '\',\'' + String(reg.nombre).replace(/'/g, "\\'") + '\',\'' + reg.fechaEntrada + '\')">🚪 Cerrar</button></td>';
         }
         
-        html += '<td>' + (reg.tiempoTotal || '-') + '</td>';
+        // Tiempo productivo
         html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
+        
+        // Entrada Válida (1 o 0)
+        var ev = reg.entradaValida;
+        if (ev === '1') html += '<td style="text-align:center;"><span style="background:#28a745;color:white;padding:3px 8px;border-radius:4px;font-weight:600;">1 ✅</span></td>';
+        else if (ev === '0') html += '<td style="text-align:center;"><span style="background:#dc3545;color:white;padding:3px 8px;border-radius:4px;font-weight:600;">0 ⚠️</span></td>';
+        else html += '<td style="text-align:center;">-</td>';
+        
+        // Salida Válida (1 o 0)
+        var sv = reg.salidaValida;
+        if (sv === '1') html += '<td style="text-align:center;"><span style="background:#28a745;color:white;padding:3px 8px;border-radius:4px;font-weight:600;">1 ✅</span></td>';
+        else if (sv === '0') html += '<td style="text-align:center;"><span style="background:#dc3545;color:white;padding:3px 8px;border-radius:4px;font-weight:600;">0 ⚠️</span></td>';
+        else html += '<td style="text-align:center;">-</td>';
+        
         html += '</tr>';
     });
+    
+    html += '</tbody></table>';
+    html += '<p class="exito">Total: ' + filtrados.length + ' registros</p>';
+    contenedor.innerHTML = html;
+}
     
     html += '</tbody></table>';
     html += '<p class="exito">Total: ' + filtrados.length + ' registros</p>';
