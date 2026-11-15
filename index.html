@@ -884,6 +884,69 @@ async function marcarEnviada(usuario) {
                 } catch (error) { contenedor.innerHTML = '<p class="error">Error al cargar</p>'; }
             } else { mostrarRegistrosFiltrados(); }
         }
+
+// Variables para el modal de salida admin
+let salidaAdminUsuario = null;
+let salidaAdminFecha = null;
+
+function abrirModalSalidaAdmin(usuario, nombre, fecha) {
+    salidaAdminUsuario = usuario;
+    salidaAdminFecha = fecha;
+    document.getElementById('salida-nombre-display').innerText = nombre;
+    document.getElementById('salida-fecha-display').innerText = fecha;
+    document.getElementById('salida-justificacion').value = '';
+    document.getElementById('msg-salida-admin').innerText = '';
+    document.getElementById('modal-salida-admin').style.display = 'block';
+}
+
+function cerrarModalSalidaAdmin() {
+    document.getElementById('modal-salida-admin').style.display = 'none';
+    salidaAdminUsuario = null;
+    salidaAdminFecha = null;
+}
+
+async function confirmarSalidaAdmin() {
+    const justificacion = document.getElementById('salida-justificacion').value.trim();
+    const msg = document.getElementById('msg-salida-admin');
+    
+    if (!justificacion) {
+        msg.innerText = '❌ La justificación es obligatoria';
+        msg.style.color = 'red';
+        return;
+    }
+    if (justificacion.length < 10) {
+        msg.innerText = '❌ La justificación debe tener al menos 10 caracteres';
+        msg.style.color = 'red';
+        return;
+    }
+    
+    msg.innerText = '⏳ Registrando salida...';
+    msg.style.color = 'blue';
+    
+    try {
+        const data = await llamarAppsScript({
+            accion: 'marcar_salida_admin',
+            usuario: salidaAdminUsuario,
+            fecha: salidaAdminFecha,
+            justificacion: justificacion
+        });
+        if (data.exito) {
+            msg.innerText = '✅ ' + data.mensaje;
+            msg.style.color = 'green';
+            setTimeout(function() {
+                cerrarModalSalidaAdmin();
+                cargarAsistencias(true);
+            }, 1500);
+        } else {
+            msg.innerText = '❌ ' + data.mensaje;
+            msg.style.color = 'red';
+        }
+    } catch (error) {
+        msg.innerText = '❌ Error de conexión';
+        msg.style.color = 'red';
+    }
+}
+
         function poblarSelectorTrabajadores() {
             var select = document.getElementById('filtro-trabajador');
             var trabajadores = [];
@@ -907,49 +970,29 @@ async function marcarEnviada(usuario) {
             });
         }
         function aplicarFiltros() { mostrarRegistrosFiltrados(); }
-        function mostrarRegistrosFiltrados() {
-            var contenedor = document.getElementById('tabla-asistencias');
-            var trabajador = document.getElementById('filtro-trabajador').value;
-            var desde = document.getElementById('filtro-desde').value;
-            var hasta = document.getElementById('filtro-hasta').value;
-            var tsDesde = desde ? fechaATimestamp(desde) : null;
-            var tsHasta = hasta ? fechaATimestamp(hasta) : null;
-            var filtrados = todosLosRegistros.filter(function(r) {
-                if (trabajador !== 'todos' && r.usuario !== trabajador) return false;
-                var ts = fechaATimestamp(r.fechaEntrada);
-                if (tsDesde !== null || tsHasta !== null) {
-                    if (ts === null) return false;
-                    if (tsDesde !== null && ts < tsDesde) return false;
-                    if (tsHasta !== null && ts > tsHasta) return false;
-                }
-                return true;
-            });
-            filtrados.sort(function(a, b) {
-                return (fechaATimestamp(b.fechaEntrada) || 0) - (fechaATimestamp(a.fechaEntrada) || 0);
-            });
-            if (filtrados.length === 0) { contenedor.innerHTML = '<p class="loading">No hay registros con esos filtros</p>'; return; }
-            var html = '<table><thead><tr>';
-            html += '<th>Fecha</th><th>Usuario</th><th>Nombre</th>';
-            html += '<th>Entrada</th><th>Comida In</th><th>Comida Out</th><th>Salida</th>';
-            html += '<th>T.Total</th><th>T.Prod</th>';
-            html += '</tr></thead><tbody>';
-            filtrados.forEach(function(reg) {
-                html += '<tr>';
-                html += '<td><strong>' + formatearFechaCliente(reg.fechaEntrada) + '</strong></td>';
-                html += '<td>' + reg.usuario + '</td>';
-                html += '<td>' + reg.nombre + '</td>';
-                html += '<td>' + hacerHoraClickeable(reg.horaEntrada, reg.ubicacionEntrada, reg.fotoEntrada, 'Entrada') + '</td>';
-                html += '<td>' + hacerHoraClickeable(reg.horaIniRef, reg.ubicacionIniRef, '', 'Comida In') + '</td>';
-                html += '<td>' + hacerHoraClickeable(reg.horaFinRef, reg.ubicacionFinRef, '', 'Comida Out') + '</td>';
-                html += '<td>' + hacerHoraClickeable(reg.horaSalida, reg.ubicacionSalida, reg.fotoSalida, 'Salida') + '</td>';
-                html += '<td>' + (reg.tiempoTotal || '-') + '</td>';
-                html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
-                html += '</tr>';
-            });
-            html += '</tbody></table>';
-            html += '<p class="exito">Total: ' + filtrados.length + ' registros</p>';
-            contenedor.innerHTML = html;
-        }
+        filtrados.forEach(function(reg) {
+    html += '<tr>';
+    html += '<td><strong>' + formatearFechaCliente(reg.fechaEntrada) + '</strong></td>';
+    html += '<td>' + reg.usuario + '</td>';
+    html += '<td>' + reg.nombre + '</td>';
+    html += '<td>' + hacerHoraClickeable(reg.horaEntrada, reg.ubicacionEntrada, reg.fotoEntrada, 'Entrada') + '</td>';
+    html += '<td>' + hacerHoraClickeable(reg.horaIniRef, reg.ubicacionIniRef, '', 'Comida In') + '</td>';
+    html += '<td>' + hacerHoraClickeable(reg.horaFinRef, reg.ubicacionFinRef, '', 'Comida Out') + '</td>';
+    
+    // Columna Salida con botón admin si no tiene salida
+    if (reg.horaSalida && reg.horaSalida !== '' && reg.horaSalida !== '-') {
+        html += '<td>' + hacerHoraClickeable(reg.horaSalida, reg.ubicacionSalida, reg.fotoSalida, 'Salida') + '</td>';
+    } else {
+        html += '<td><button class="btn-small btn-danger" onclick="abrirModalSalidaAdmin(\'' + reg.usuario + '\',\'' + reg.nombre.replace(/'/g, "\\'") + '\',\'' + reg.fechaEntrada + '\')" title="Marcar salida como admin">🚪 Admin</button></td>';
+    }
+    
+    html += '<td>' + (reg.tiempoTotal || '-') + '</td>';
+    html += '<td>' + (reg.tiempoProductivo || '-') + '</td>';
+    html += '</tr>';
+});
+
+
+
         function hacerHoraClickeable(hora, ubicacion, foto, tipo) {
             var horaFormateada = formatearHoraCliente(hora);
             if (horaFormateada === '-' || (typeof horaFormateada === 'string' && horaFormateada.indexOf('Ver foto') !== -1)) return horaFormateada;
@@ -1173,5 +1216,28 @@ async function marcarEnviada(usuario) {
             cargarInfoEmpresaLogin();
         });
     </script>
+    <!-- MODAL MARCAR SALIDA ADMIN -->
+<div id="modal-salida-admin" class="modal">
+    <div class="modal-content">
+        <h3>🚪 Marcar Salida de Trabajador</h3>
+        <div class="info-box" style="background: #fff3cd; font-size: 13px;">
+            Trabajador: <strong id="salida-nombre-display"></strong><br>
+            Fecha: <span id="salida-fecha-display"></span>
+        </div>
+        <div class="alerta-seguridad" style="margin: 10px 0;">
+            ⚠️ Se registrará la <strong>hora actual del servidor</strong> como hora de salida.
+        </div>
+        <div class="form-group" style="text-align: left;">
+            <label>📝 Justificación (obligatoria):</label>
+            <textarea id="salida-justificacion" placeholder="Motivo de la salida anticipada o forzada..." 
+                      style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; min-height: 80px; font-family: inherit; font-size: 14px;"></textarea>
+        </div>
+        <p id="msg-salida-admin" class="error"></p>
+        <div class="modal-buttons">
+            <button onclick="confirmarSalidaAdmin()" class="btn-success">✅ Confirmar Salida</button>
+            <button onclick="cerrarModalSalidaAdmin()" class="btn-secondary">❌ Cancelar</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
