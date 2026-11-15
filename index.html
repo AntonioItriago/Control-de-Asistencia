@@ -131,7 +131,7 @@
                 Bienvenido, <strong id="nombre-user"></strong>
                 <div id="user-slogan" style="font-style: italic; color: #666; font-size: 13px; margin-top: 5px;"></div>
             </div>
-            <button id="btn-instalar" class="btn-install" onclick="instalarApp()">📱 Instalar Aplicación en este dispositivo</button>
+            <div id="bloque-instalacion-o-slogan" style="margin-bottom: 20px;"></div>
             <div class="titulo-con-boton">
                 <h3>📍 Registrar Jornada</h3>
                 <button class="btn-cambiar-pass" onclick="mostrarModalCambiarPass()">🔑 Cambiar Contraseña</button>
@@ -384,32 +384,36 @@
 
         // ==================== INFO EMPRESA EN LOGIN ====================
         async function cargarInfoEmpresaLogin() {
-            try {
-                var data = await llamarAppsScript({ accion: 'obtener_empresa' });
-                if (data.exito && data.empresa) {
-                    infoEmpresaGlobal = data.empresa;
-                    if (data.empresa.nombre) {
-                        document.getElementById('login-titulo').innerText = '🏢 ' + data.empresa.nombre;
-                    }
-                    if (data.empresa.slogan) {
-                        document.getElementById('login-slogan').innerText = '"' + data.empresa.slogan + '"';
-                    }
-                    if (data.empresa.direccion) {
-                        document.getElementById('login-direccion').innerText = data.empresa.direccion;
-                    }
-                }
-            } catch (error) {
-                console.error('Error al cargar info empresa:', error);
+    try {
+        var data = await llamarAppsScript({ accion: 'obtener_empresa' });
+        if (data.exito && data.empresa) {
+            infoEmpresaGlobal = data.empresa;
+            if (data.empresa.nombre) {
+                document.getElementById('login-titulo').innerText = '🏢 ' + data.empresa.nombre;
             }
+            if (data.empresa.slogan) {
+                document.getElementById('login-slogan').innerText = '"' + data.empresa.slogan + '"';
+            }
+            if (data.empresa.direccion) {
+                document.getElementById('login-direccion').innerText = data.empresa.direccion;
+            }
+            // Mostrar bloque dinámico también en el panel de usuario
+            mostrarBloqueInstalacionOSlogan();
         }
+    } catch (error) {
+        console.error('Error al cargar info empresa:', error);
+    }
+}
 
         function mostrarInfoEmpresaEnPanel() {
-            if (!infoEmpresaGlobal) return;
-            var sloganDiv = document.getElementById('user-slogan');
-            if (sloganDiv && infoEmpresaGlobal.slogan) {
-                sloganDiv.innerText = '"' + infoEmpresaGlobal.slogan + '"';
-            }
-        }
+    if (!infoEmpresaGlobal) return;
+    var sloganDiv = document.getElementById('user-slogan');
+    if (sloganDiv && infoEmpresaGlobal.slogan) {
+        sloganDiv.innerText = '"' + infoEmpresaGlobal.slogan + '"';
+    }
+    // Mostrar bloque dinámico (instalación o slogan)
+    mostrarBloqueInstalacionOSlogan();
+}
 
         // Capturar el evento de instalación
 window.addEventListener('beforeinstallprompt', function(e) {
@@ -444,6 +448,33 @@ async function instalarApp() {
             instrucciones = '💻 Escritorio:\n1. Haz clic en el ícono de instalación en la barra de direcciones\n2. "Instalar"\n3. Confirma';
         }
         alert(instrucciones);
+    }
+}
+
+function mostrarBloqueInstalacionOSlogan() {
+    var contenedor = document.getElementById('bloque-instalacion-o-slogan');
+    if (!contenedor) return;
+    
+    // Detectar si está en modo PWA instalada
+    var esPWA = window.matchMedia('(display-mode: standalone)').matches 
+                || window.navigator.standalone === true;
+    
+    if (esPWA) {
+        // Está en la app instalada → mostrar slogan
+        var sloganTexto = '';
+        if (infoEmpresaGlobal && infoEmpresaGlobal.slogan) {
+            sloganTexto = '"' + infoEmpresaGlobal.slogan + '"';
+        } else {
+            sloganTexto = 'Control de Asistencia';
+        }
+        contenedor.innerHTML = '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center; font-size: 15px; font-style: italic; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">' +
+            '<div style="font-size: 24px; margin-bottom: 8px;">🏢</div>' +
+            '<div style="font-size: 16px; font-weight: 600; font-style: normal; margin-bottom: 5px;">' + (infoEmpresaGlobal ? infoEmpresaGlobal.nombre : 'Mi Empresa') + '</div>' +
+            '<div>' + sloganTexto + '</div>' +
+            '</div>';
+    } else {
+        // Está en el navegador → mostrar botón de instalación
+        contenedor.innerHTML = '<button id="btn-instalar" class="btn-install" onclick="instalarApp()" style="background-color: #6f42c1; margin-bottom: 0; display: block; width: 100%;">📱 Instalar Aplicación en este dispositivo</button>';
     }
 }
 
