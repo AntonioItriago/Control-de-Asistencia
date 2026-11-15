@@ -886,8 +886,7 @@ async function marcarEnviada(usuario) {
         }
 
 // Variables para el modal de salida admin
-let salidaAdminUsuario = null;
-let salidaAdminFecha = null;
+let salidaAdminUsuario = null, salidaAdminFecha = null;
 
 function abrirModalSalidaAdmin(usuario, nombre, fecha) {
     salidaAdminUsuario = usuario;
@@ -897,6 +896,29 @@ function abrirModalSalidaAdmin(usuario, nombre, fecha) {
     document.getElementById('salida-justificacion').value = '';
     document.getElementById('msg-salida-admin').innerText = '';
     document.getElementById('modal-salida-admin').style.display = 'block';
+}
+function cerrarModalSalidaAdmin() {
+    document.getElementById('modal-salida-admin').style.display = 'none';
+    salidaAdminUsuario = null; salidaAdminFecha = null;
+}
+async function confirmarSalidaAdmin() {
+    var just = document.getElementById('salida-justificacion').value.trim();
+    var msg = document.getElementById('msg-salida-admin');
+    if (just.length < 10) { msg.innerText = '❌ La justificación debe tener al menos 10 caracteres'; msg.style.color = 'red'; return; }
+    msg.innerText = '⏳ Registrando...'; msg.style.color = 'blue';
+    try {
+        var data = await llamarAppsScript({
+            accion: 'marcar_salida_admin',
+            usuario: salidaAdminUsuario,
+            fecha: salidaAdminFecha,
+            justificacion: just,
+            admin: nombreUsuarioActual
+        });
+        if (data.exito) {
+            msg.innerText = '✅ ' + data.mensaje; msg.style.color = 'green';
+            setTimeout(function(){ cerrarModalSalidaAdmin(); cargarAsistencias(true); }, 1500);
+        } else { msg.innerText = '❌ ' + data.mensaje; msg.style.color = 'red'; }
+    } catch (e) { msg.innerText = '❌ Error de conexión'; msg.style.color = 'red'; }
 }
 
 function cerrarModalSalidaAdmin() {
@@ -981,7 +1003,12 @@ async function confirmarSalidaAdmin() {
     
     // Columna Salida con botón admin si no tiene salida
     if (reg.horaSalida && reg.horaSalida !== '' && reg.horaSalida !== '-') {
-        html += '<td>' + hacerHoraClickeable(reg.horaSalida, reg.ubicacionSalida, reg.fotoSalida, 'Salida') + '</td>';
+        if (reg.horaSalida && reg.horaSalida !== '-') {
+    var extra = reg.justificacionSalida ? ' 📝' : '';
+    html += '<td>' + hacerHoraClickeable(reg.horaSalida, reg.ubicacionSalida, reg.fotoSalida, 'Salida') + extra + '</td>';
+} else {
+    html += '<td><button class="btn-small btn-danger" onclick="abrirModalSalidaAdmin(\'' + reg.usuario + '\',\'' + String(reg.nombre).replace(/'/g,"\\'") + '\',\'' + reg.fechaEntrada + '\')">🚪 Cerrar</button></td>';
+}
     } else {
         html += '<td><button class="btn-small btn-danger" onclick="abrirModalSalidaAdmin(\'' + reg.usuario + '\',\'' + reg.nombre.replace(/'/g, "\\'") + '\',\'' + reg.fechaEntrada + '\')" title="Marcar salida como admin">🚪 Admin</button></td>';
     }
@@ -1219,22 +1246,19 @@ async function confirmarSalidaAdmin() {
     <!-- MODAL MARCAR SALIDA ADMIN -->
 <div id="modal-salida-admin" class="modal">
     <div class="modal-content">
-        <h3>🚪 Marcar Salida de Trabajador</h3>
-        <div class="info-box" style="background: #fff3cd; font-size: 13px;">
+        <h3>🚪 Cierre Administrativo de Jornada</h3>
+        <div class="info-box" style="background:#fff3cd;font-size:13px;">
             Trabajador: <strong id="salida-nombre-display"></strong><br>
-            Fecha: <span id="salida-fecha-display"></span>
+            Jornada del: <span id="salida-fecha-display"></span>
         </div>
-        <div class="alerta-seguridad" style="margin: 10px 0;">
-            ⚠️ Se registrará la <strong>hora actual del servidor</strong> como hora de salida.
-        </div>
-        <div class="form-group" style="text-align: left;">
-            <label>📝 Justificación (obligatoria):</label>
-            <textarea id="salida-justificacion" placeholder="Motivo de la salida anticipada o forzada..." 
-                      style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; min-height: 80px; font-family: inherit; font-size: 14px;"></textarea>
+        <div class="alerta-seguridad">⚠️ Se registrará la <strong>hora actual del servidor</strong> como salida. Esta acción queda auditada con tu nombre y la justificación.</div>
+        <div class="form-group" style="text-align:left;">
+            <label>📝 Justificación (obligatoria, mín. 10 caracteres):</label>
+            <textarea id="salida-justificacion" placeholder="Ej: El trabajador olvidó marcar la salida al finalizar su turno." style="min-height:90px;"></textarea>
         </div>
         <p id="msg-salida-admin" class="error"></p>
         <div class="modal-buttons">
-            <button onclick="confirmarSalidaAdmin()" class="btn-success">✅ Confirmar Salida</button>
+            <button onclick="confirmarSalidaAdmin()" class="btn-success">✅ Aprobar Salida</button>
             <button onclick="cerrarModalSalidaAdmin()" class="btn-secondary">❌ Cancelar</button>
         </div>
     </div>
